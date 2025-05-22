@@ -1,6 +1,21 @@
 import streamlit as st
 from datetime import datetime
-import utils # Your utility functions
+
+try:
+    import utils # Your utility functions
+except st.errors.StreamlitSecretNotFoundError as e:
+    st.error(
+        "CRITICAL ERROR: Could not load application secrets required by 'utils.py'.\n"
+        "Please ensure that the file '.streamlit/secrets.toml' exists in your project root "
+        "(/Users/mateoheras/Library/CloudStorage/OneDrive-Personal/GitHub/ShiftTradeAV/.streamlit/secrets.toml) "
+        "and contains all necessary secrets (e.g., SUPABASE_URL, SUPABASE_KEY, SMTP details).\n\n"
+        f"Details from Streamlit: {e}"
+    )
+    st.caption("The application cannot continue without these secrets. Please create or correct the secrets.toml file and restart.")
+    st.stop()
+except ImportError as e:
+    st.error(f"Failed to import the 'utils' module. Please ensure 'utils.py' exists in the same directory and is free of errors. Details: {e}")
+    st.stop()
 
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx" # Replace with your actual Supabase project ID
@@ -32,8 +47,18 @@ request_details = utils.get_shift_request_details(shift_request_id, PROJECT_ID)
 if request_details:
     st.markdown(f"""
     **Detalles del Turno a Cubrir:**
-    - **Solicitante:** {request_details.get('requester_name', 'N/A')}
+    - **Fecha del Turno Original:** {request_details.get('date_request', 'N/A')}
     - **Vuelo:** {request_details.get('flight_number', 'N/A')}
+    
+    **Información del Solicitante:**
+    - **Nombre:** {request_details.get('requester_name', 'N/A')}
+    - **Número de Empleado:** {request_details.get('requester_employee_number', 'N/A')}
+    - **Email:** {request_details.get('requester_email', 'N/A')}
+
+    **Confirmación de Tus Datos (Quien Cubre):**
+    - **Nombre:** {request_details.get('cover_name', 'N/A')}
+    - **Número de Empleado:** {request_details.get('cover_employee_number', 'N/A')}
+    - **Email:** {request_details.get('cover_email', 'N/A')}
     """)
 else:
     st.warning("No se pudieron cargar los detalles completos de la solicitud.")

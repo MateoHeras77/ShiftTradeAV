@@ -49,7 +49,7 @@ with st.spinner("Cargando detalles del turno..."):
 if request_details:
     st.markdown(f"""
     **Detalles del Turno a Cubrir:**
-    - **Fecha del Turno Original:** {request_details.get('date_request', 'N/A')}
+    - **Fecha del Turno Original:** {utils.format_date(request_details.get('date_request', 'N/A'))}
     - **Vuelo:** {request_details.get('flight_number', 'N/A')}
     
     **Información del Solicitante:**
@@ -72,10 +72,12 @@ if st.button("✅ Aceptar Cambio de Turno"):
         #    Mark token as `used`
         progress_bar = st.progress(0)
         st.caption("Actualizando estado de la solicitud...")
-        now_utc = datetime.utcnow().isoformat()
+        now_utc = datetime.utcnow()
         update_success = utils.update_shift_request_status(
             shift_request_id,
-            {"date_accepted_by_cover": now_utc},
+            {
+                "date_accepted_by_cover": now_utc.isoformat()
+            },
             PROJECT_ID
         )
         progress_bar.progress(33)

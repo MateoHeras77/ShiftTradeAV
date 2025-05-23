@@ -66,7 +66,7 @@ if submit_button:
                     email_subject = "Solicitud de Cobertura de Turno"
                     email_body = f"""Hola {cover_name},
 
-{requester_name} ha solicitado que cubras su turno para el vuelo {flight_number} el {date_request_input}.
+{requester_name} ha solicitado que cubras su turno para el vuelo {flight_number} el {utils.format_date(date_request_input)}.
 
 Para aceptar, por favor haz clic en el siguiente enlace (válido por 24 horas):
 {accept_url}

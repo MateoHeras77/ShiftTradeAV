@@ -61,11 +61,11 @@ if st.session_state.view_mode == 'pending_requests':
             req_id = req.get('id')
             with st.expander(f"Solicitud ID: {req_id} - Vuelo: {req.get('flight_number', 'N/A')} - Solicitante: {req.get('requester_name', 'N/A')}"):
                 st.markdown(f"""
-                - **Fecha Solicitud:** {req.get('date_request')}
+                - **Fecha Solicitud:** {utils.format_date(req.get('date_request', 'N/A'))}
                 - **Número de Vuelo:** {req.get('flight_number')}
                 - **Solicitante:** {req.get('requester_name')} ({req.get('requester_employee_number')}, {req.get('requester_email')})
                 - **Cubridor:** {req.get('cover_name')} ({req.get('cover_employee_number')}, {req.get('cover_email')})
-                - **Fecha Aceptación por Cubridor:** {req.get('date_accepted_by_cover', 'N/A')}
+                - **Fecha Aceptación por Cubridor:** {utils.format_date(req.get('date_accepted_by_cover', 'N/A'))}
                 """)
 
                 supervisor_name_input = st.text_input("Nombre del Supervisor", key=f"supervisor_name_{req_id}")
@@ -85,9 +85,10 @@ if st.session_state.view_mode == 'pending_requests':
                                 with st.spinner(f"Aprobando solicitud {req_id}..."):
                                     progress_bar = st.progress(0)
                                     st.caption("Actualizando estado en la base de datos...")
+                                    now_utc = datetime.utcnow()
                                     updates = {
                                         "supervisor_status": "approved",
-                                        "supervisor_decision_date": datetime.utcnow().isoformat(),
+                                        "supervisor_decision_date": now_utc.isoformat(),
                                         "supervisor_comments": supervisor_comments,
                                         "supervisor_name": supervisor_name_input
                                     }
@@ -130,9 +131,10 @@ if st.session_state.view_mode == 'pending_requests':
                                 with st.spinner(f"Rechazando solicitud {req_id}..."):
                                     progress_bar = st.progress(0)
                                     st.caption("Actualizando estado en la base de datos...")
+                                    now_utc = datetime.utcnow()
                                     updates = {
                                         "supervisor_status": "rejected",
-                                        "supervisor_decision_date": datetime.utcnow().isoformat(),
+                                        "supervisor_decision_date": now_utc.isoformat(),
                                         "supervisor_comments": supervisor_comments,
                                         "supervisor_name": supervisor_name_input
                                     }
@@ -188,11 +190,12 @@ elif st.session_state.view_mode == 'history_view':
         
         df_display_full = df_history[existing_columns_in_df].copy()
 
-        # Convert relevant date columns to datetime objects if they are not already
+        # Convert relevant date columns to datetime objects and format with day name
         if 'date_request' in df_display_full.columns: # Assuming this is the original shift date
-            df_display_full['date_request'] = pd.to_datetime(df_display_full['date_request'], errors='coerce').dt.strftime('%Y-%m-%d')
+            # Usar la función personalizada de formateo para todas las fechas
+            df_display_full['date_request'] = df_display_full['date_request'].apply(utils.format_date)
         if 'supervisor_decision_date' in df_display_full.columns:
-            df_display_full['supervisor_decision_date'] = pd.to_datetime(df_display_full['supervisor_decision_date'], errors='coerce').dt.strftime('%Y-%m-%d %H:%M')
+            df_display_full['supervisor_decision_date'] = df_display_full['supervisor_decision_date'].apply(utils.format_date)
 
         rename_map = {
             'id': 'ID',

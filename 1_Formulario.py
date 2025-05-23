@@ -1,9 +1,15 @@
 import streamlit as st
 from datetime import datetime
+import re
 import utils  # Your utility functions for Supabase, tokens, and email
 
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx" # Replace with your actual Supabase project ID
+
+# Function to validate email format
+def validate_email(email):
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
 
 st.set_page_config(
     page_title="Solicitar Cambio",
@@ -22,18 +28,24 @@ with st.form("shift_request_form"):
     st.header("Empleado que Solicita el Cambio")
     requester_name = st.text_input("Nombre del solicitante")
     requester_employee_number = st.text_input("Número de empleado del solicitante")
-    requester_email = st.text_input("Email del solicitante")
-
+    requester_email = st.text_input("Email del solicitante", placeholder="ejemplo@empresa.com")
+    
     st.header("Empleado que Cubrirá el Turno")
     cover_name = st.text_input("Nombre del compañero que cubrirá")
     cover_employee_number = st.text_input("Número de empleado del compañero")
-    cover_email = st.text_input("Email del compañero que cubrirá")
+    cover_email = st.text_input("Email del compañero que cubrirá", placeholder="compañero@empresa.com")
+    st.caption("⚠️ Verifica cuidadosamente el email - es la única forma de contactar al compañero")
 
     submit_button = st.form_submit_button("Enviar Solicitud")
 
 if submit_button:
+    # Validation checks
     if not all([date_request_input, flight_number, requester_name, requester_employee_number, requester_email, cover_name, cover_employee_number, cover_email]):
         st.error("Por favor, completa todos los campos.")
+    elif not validate_email(requester_email):
+        st.error("❌ El email del solicitante no tiene un formato válido. Por favor, verifica que incluya @ y un dominio válido.")
+    elif not validate_email(cover_email):
+        st.error("❌ El email del compañero que cubrirá no tiene un formato válido. Por favor, verifica que incluya @ y un dominio válido.")
     else:
         with st.spinner("Procesando la solicitud..."):
             request_details = {
@@ -79,11 +91,24 @@ Gracias."""
                     progress_bar.progress(100)
 
                     if email_sent:
-                        st.success(f"Solicitud enviada con ID: {shift_request_id}")
-                        st.info(f"Se ha enviado un correo a {cover_email} con el enlace para aceptar el cambio.")
+                        st.success(f"✅ Solicitud enviada con ID: {shift_request_id}")
+                        st.info(f"📧 Se ha enviado un correo a **{cover_email}** con el enlace para aceptar el cambio.")
+                        st.info("💡 **Nota importante:** Si el compañero no recibe el correo, verifica que:")
+                        st.write("• El email esté escrito correctamente")
+                        st.write("• Revise su carpeta de spam/correo no deseado")
+                        st.write("• El dominio del email sea válido")
                     else:
-                        st.success(f"Solicitud enviada con ID: {shift_request_id}")
-                        st.error("Error al enviar el correo de aceptación. Por favor, contacta al administrador.")
+                        st.success(f"✅ Solicitud guardada con ID: {shift_request_id}")
+                        st.error("❌ **Error al enviar el correo de aceptación**")
+                        st.warning("⚠️ **Posibles causas del error:**")
+                        st.write("• El email ingresado podría tener un error de digitación")
+                        st.write("• El dominio del email no existe")
+                        st.write("• Problemas temporales del servidor de correo")
+                        st.info("🔧 **Soluciones:**")
+                        st.write("• Verifica que el email esté escrito correctamente")
+                        st.write("• Contacta directamente al compañero con el enlace:")
+                        st.code(accept_url)
+                        st.write("• O contacta al administrador para reenviar el correo")
                 else:
                     st.error("Error al generar el token de aceptación. La solicitud fue guardada, pero el correo no pudo ser enviado.")
             else:

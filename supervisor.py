@@ -16,14 +16,15 @@ if 'view_mode' not in st.session_state:
 
 st.sidebar.header("Acciones")
 if st.sidebar.button("Refrescar Datos"):
-    with st.sidebar.spinner("Refrescando datos..."):
-        st.sidebar.info("Limpiando caché y recargando información...")
-        # Clear relevant session state to force data refresh if needed
-        if 'all_requests_for_history' in st.session_state:
-            del st.session_state.all_requests_for_history
-        if 'pending_requests_data' in st.session_state:
-            del st.session_state.pending_requests_data
-        st.rerun()
+    # El método spinner no está disponible para st.sidebar
+    refresh_status = st.sidebar.empty()
+    refresh_status.info("Refrescando datos...")
+    # Clear relevant session state to force data refresh if needed
+    if 'all_requests_for_history' in st.session_state:
+        del st.session_state.all_requests_for_history
+    if 'pending_requests_data' in st.session_state:
+        del st.session_state.pending_requests_data
+    st.rerun()
 
 st.sidebar.markdown("---")
 

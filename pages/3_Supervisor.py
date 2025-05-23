@@ -140,13 +140,56 @@ if st.session_state.view_mode == 'pending_requests':
                                     
                                     if update_success:
                                         st.caption("Enviando notificaciones por correo...")
-                                        # 3. Notify both employees
-                                        email1 = utils.send_email(req.get('requester_email'), 
-                                                 "Cambio de Turno APROBADO", 
-                                                 f"Tu solicitud de cambio para el vuelo {req.get('flight_number')} ha sido APROBADA por el supervisor {supervisor_name_input}. Comentarios: {supervisor_comments}")
-                                        email2 = utils.send_email(req.get('cover_email'), 
-                                                 "Cambio de Turno APROBADO", 
-                                                 f"El cambio de turno que aceptaste cubrir para el vuelo {req.get('flight_number')} ha sido APROBADO por el supervisor {supervisor_name_input}. Comentarios: {supervisor_comments}")
+                                        
+                                        # Get formatted dates for the emails
+                                        fecha_aprobacion = datetime.now().strftime("%d/%m/%Y")
+                                        fecha_vuelo = utils.format_date(req.get('date_request'))
+                                        fecha_aceptacion = utils.format_date(req.get('date_accepted_by_cover')) if req.get('date_accepted_by_cover') else "N/A"
+                                        
+                                        # Email to requester
+                                        requester_subject = "✅ Cambio de Turno APROBADO"
+                                        requester_body = f"""Hola {req.get('requester_name')},
+
+¡Excelentes noticias! Tu solicitud de cambio de turno ha sido APROBADA.
+
+**Detalles del cambio aprobado:**
+• Fecha de aprobación: {fecha_aprobacion}
+• Vuelo: {req.get('flight_number')}
+• Fecha del turno: {fecha_vuelo}
+• Compañero que cubre: {req.get('cover_name')}
+• Fecha de aceptación del compañero: {fecha_aceptacion}
+• Supervisor que aprobó: {supervisor_name_input}
+
+**Comentarios del supervisor:** {supervisor_comments if supervisor_comments else "Sin comentarios adicionales"}
+
+El cambio de turno está oficialmente autorizado.
+
+Saludos,
+ShiftTradeAV"""
+
+                                        # Email to cover employee
+                                        cover_subject = "✅ Cambio de Turno APROBADO"
+                                        cover_body = f"""Hola {req.get('cover_name')},
+
+El cambio de turno que aceptaste cubrir ha sido APROBADO por el supervisor.
+
+**Detalles del cambio aprobado:**
+• Fecha de aprobación: {fecha_aprobacion}
+• Vuelo: {req.get('flight_number')}
+• Fecha del turno: {fecha_vuelo}
+• Solicitante original: {req.get('requester_name')}
+• Tu fecha de aceptación: {fecha_aceptacion}
+• Supervisor que aprobó: {supervisor_name_input}
+
+**Comentarios del supervisor:** {supervisor_comments if supervisor_comments else "Sin comentarios adicionales"}
+
+Gracias por tu colaboración. El cambio está oficialmente autorizado.
+
+Saludos,
+ShiftTradeAV"""
+
+                                        email1 = utils.send_email(req.get('requester_email'), requester_subject, requester_body)
+                                        email2 = utils.send_email(req.get('cover_email'), cover_subject, cover_body)
                                         progress_bar.progress(100)
                                         
                                         st.success(f"Solicitud {req_id} aprobada por {supervisor_name_input}.")
@@ -186,13 +229,56 @@ if st.session_state.view_mode == 'pending_requests':
                                     
                                     if update_success:
                                         st.caption("Enviando notificaciones por correo...")
-                                        # 3. Notify both employees
-                                        email1 = utils.send_email(req.get('requester_email'), 
-                                                 "Cambio de Turno RECHAZADO", 
-                                                 f"Tu solicitud de cambio para el vuelo {req.get('flight_number')} ha sido RECHAZADA por el supervisor {supervisor_name_input}. Motivo: {supervisor_comments}")
-                                        email2 = utils.send_email(req.get('cover_email'), 
-                                                 "Cambio de Turno RECHAZADO", 
-                                                 f"El cambio de turno que aceptaste cubrir para el vuelo {req.get('flight_number')} ha sido RECHAZADO por el supervisor {supervisor_name_input}. Motivo: {supervisor_comments}")
+                                        
+                                        # Get formatted dates for the emails
+                                        fecha_rechazo = datetime.now().strftime("%d/%m/%Y")
+                                        fecha_vuelo = utils.format_date(req.get('date_request'))
+                                        fecha_aceptacion = utils.format_date(req.get('date_accepted_by_cover')) if req.get('date_accepted_by_cover') else "N/A"
+                                        
+                                        # Email to requester
+                                        requester_subject = "❌ Cambio de Turno RECHAZADO"
+                                        requester_body = f"""Hola {req.get('requester_name')},
+
+Lamentamos informarte que tu solicitud de cambio de turno ha sido RECHAZADA.
+
+**Detalles de la solicitud rechazada:**
+• Fecha de rechazo: {fecha_rechazo}
+• Vuelo: {req.get('flight_number')}
+• Fecha del turno: {fecha_vuelo}
+• Compañero que había aceptado: {req.get('cover_name')}
+• Fecha de aceptación del compañero: {fecha_aceptacion}
+• Supervisor que rechazó: {supervisor_name_input}
+
+**Motivo del rechazo:** {supervisor_comments}
+
+Puedes presentar una nueva solicitud si consideras que las circunstancias han cambiado.
+
+Saludos,
+ShiftTradeAV"""
+
+                                        # Email to cover employee
+                                        cover_subject = "❌ Cambio de Turno RECHAZADO"
+                                        cover_body = f"""Hola {req.get('cover_name')},
+
+Te informamos que el cambio de turno que habías aceptado cubrir ha sido RECHAZADO por el supervisor.
+
+**Detalles de la solicitud rechazada:**
+• Fecha de rechazo: {fecha_rechazo}
+• Vuelo: {req.get('flight_number')}
+• Fecha del turno: {fecha_vuelo}
+• Solicitante original: {req.get('requester_name')}
+• Tu fecha de aceptación: {fecha_aceptacion}
+• Supervisor que rechazó: {supervisor_name_input}
+
+**Motivo del rechazo:** {supervisor_comments}
+
+Ya no necesitas cubrir este turno. Gracias por tu disposición.
+
+Saludos,
+ShiftTradeAV"""
+
+                                        email1 = utils.send_email(req.get('requester_email'), requester_subject, requester_body)
+                                        email2 = utils.send_email(req.get('cover_email'), cover_subject, cover_body)
                                         progress_bar.progress(100)
                                         
                                         st.success(f"Solicitud {req_id} rechazada por {supervisor_name_input}.")

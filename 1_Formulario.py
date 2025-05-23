@@ -79,9 +79,19 @@ if submit_button:
                     # 4. Send the link by email to the covering employee
                     st.caption("Enviando correo electrónico...")
                     email_subject = "Solicitud de Cobertura de Turno"
+                    
+                    # Get current date for the request
+                    fecha_solicitud = datetime.now().strftime("%d/%m/%Y")
+                    
                     email_body = f"""Hola {cover_name},
 
 {requester_name} ha solicitado que cubras su turno para el vuelo {flight_number} el {utils.format_date(date_request_input)}.
+
+**Detalles de la solicitud:**
+• Fecha de solicitud: {fecha_solicitud}
+• Vuelo: {flight_number}
+• Fecha del turno: {utils.format_date(date_request_input)}
+• Solicitante: {requester_name}
 
 Para aceptar, por favor haz clic en el siguiente enlace (válido por 24 horas):
 {accept_url}

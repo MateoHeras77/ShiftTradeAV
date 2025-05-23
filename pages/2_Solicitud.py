@@ -102,17 +102,28 @@ if st.button("✅ Aceptar Cambio de Turno"):
                 requester_name = updated_request_details.get('requester_name')
                 cover_name = updated_request_details.get('cover_name')
                 flight_number = updated_request_details.get('flight_number')
+                date_request = updated_request_details.get('date_request')
 
                 # 3. Send confirmation emails
                 st.caption("Enviando correos de confirmación...")
                 confirmation_subject = "Confirmación de Cambio de Turno Aceptado"
                 emails_sent = True
                 
+                # Get current date for acceptance
+                fecha_aceptacion = datetime.now().strftime("%d/%m/%Y")
+                
                 # Email to requester
                 if requester_email:
                     requester_body = f"""Hola {requester_name},
 
-Buenas noticias. {cover_name} ha aceptado cubrir tu turno para el vuelo {flight_number}.
+Buenas noticias. {cover_name} ha aceptado cubrir tu turno.
+
+**Detalles del cambio:**
+• Fecha de aceptación: {fecha_aceptacion}
+• Vuelo: {flight_number}
+• Fecha del turno: {utils.format_date(date_request)}
+• Compañero que cubre: {cover_name}
+
 La solicitud está ahora pendiente de aprobación por el supervisor.
 
 Saludos."""
@@ -124,7 +135,14 @@ Saludos."""
                 if cover_email:
                     cover_body = f"""Hola {cover_name},
 
-Has aceptado cubrir el turno de {requester_name} para el vuelo {flight_number}.
+Has aceptado cubrir el turno de {requester_name}.
+
+**Detalles del cambio:**
+• Fecha de aceptación: {fecha_aceptacion}
+• Vuelo: {flight_number}
+• Fecha del turno: {utils.format_date(date_request)}
+• Solicitante: {requester_name}
+
 La solicitud está ahora pendiente de aprobación por el supervisor.
 
 Gracias por tu colaboración."""

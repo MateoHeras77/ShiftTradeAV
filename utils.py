@@ -187,7 +187,8 @@ def get_pending_requests(project_id: str):
         st.error("Cliente Supabase no inicializado. No se pueden obtener las solicitudes pendientes.")
         return []
     try:
-        response = supabase.table('shift_requests').select('*').eq('supervisor_status', 'pending').order('date_request', desc=False).execute()
+        # No ordenamos aquí ya que lo haremos más precisamente en el frontend
+        response = supabase.table('shift_requests').select('*').eq('supervisor_status', 'pending').execute()
         return response.data if response.data else []
     except Exception as e:
         print(f"Exception fetching pending requests: {e}")

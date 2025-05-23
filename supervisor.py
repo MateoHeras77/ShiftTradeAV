@@ -57,16 +57,47 @@ if st.session_state.view_mode == 'pending_requests':
             st.rerun()
     else:
         st.subheader(f"Total Pendientes: {len(pending_requests)}")
+        
+        # Ordenar solicitudes por fecha (más cercanas primero)
+        try:
+            # Convertir las fechas de string a objetos datetime para ordenarlas correctamente
+            for req in pending_requests:
+                if 'date_request' in req:
+                    # Intentar convertir a objeto datetime, si ya es un string ISO
+                    try:
+                        req['date_request_obj'] = datetime.fromisoformat(req['date_request'].replace('Z', '+00:00'))
+                    except (ValueError, AttributeError):
+                        # Si hay un error, asignar fecha lejana para que aparezca al final
+                        req['date_request_obj'] = datetime(2099, 1, 1)
+                else:
+                    req['date_request_obj'] = datetime(2099, 1, 1)  # Fecha lejana por defecto
+            
+            # Ordenar la lista por la fecha (más cercanas primero)
+            pending_requests = sorted(pending_requests, key=lambda x: x['date_request_obj'])
+        except Exception as e:
+            st.warning(f"No se pudieron ordenar las solicitudes por fecha: {e}")
+
         for req in pending_requests:
             req_id = req.get('id')
-            with st.expander(f"Solicitud ID: {req_id} - Vuelo: {req.get('flight_number', 'N/A')} - Solicitante: {req.get('requester_name', 'N/A')}"):
+            formatted_date = utils.format_date(req.get('date_request', 'N/A'))
+            with st.expander(f"Fecha: {formatted_date} - Vuelo: {req.get('flight_number', 'N/A')} - Solicitante: {req.get('requester_name', 'N/A')}"):
+                # Verificar si el cubridor ha aceptado la solicitud
+                has_cover_accepted = req.get('date_accepted_by_cover') is not None and req.get('date_accepted_by_cover') != 'N/A'
+                
+                # Información básica de la solicitud
                 st.markdown(f"""
                 - **Fecha Solicitud:** {utils.format_date(req.get('date_request', 'N/A'))}
                 - **Número de Vuelo:** {req.get('flight_number')}
                 - **Solicitante:** {req.get('requester_name')} ({req.get('requester_employee_number')}, {req.get('requester_email')})
                 - **Cubridor:** {req.get('cover_name')} ({req.get('cover_employee_number')}, {req.get('cover_email')})
-                - **Fecha Aceptación por Cubridor:** {utils.format_date(req.get('date_accepted_by_cover', 'N/A'))}
                 """)
+                
+                # Mostrar estado de aceptación del cubridor con colores
+                if has_cover_accepted:
+                    st.success(f"✅ **ACEPTADO POR EL CUBRIDOR:** {utils.format_date(req.get('date_accepted_by_cover'))}")
+                else:
+                    st.error("❌ **PENDIENTE DE ACEPTACIÓN POR EL CUBRIDOR**")
+                    st.warning("⚠️ El cubridor aún no ha aceptado esta solicitud. No se recomienda aprobarla hasta que el cubridor confirme.")
 
                 supervisor_name_input = st.text_input("Nombre del Supervisor", key=f"supervisor_name_{req_id}")
                 supervisor_password_input = st.text_input("Contraseña del Supervisor", type="password", key=f"supervisor_password_{req_id}")
@@ -74,11 +105,18 @@ if st.session_state.view_mode == 'pending_requests':
 
                 col1, col2, col_spacer = st.columns([1,1,5])
                 with col1:
-                    if st.button("✅ Aprobar", key=f"approve_{req_id}", type="primary"):
+                    # Verificar si el cubridor ha aceptado para habilitar o deshabilitar el botón de aprobar
+                    has_cover_accepted = req.get('date_accepted_by_cover') is not None and req.get('date_accepted_by_cover') != 'N/A'
+                    
+                    approve_button = st.button("✅ Aprobar", key=f"approve_{req_id}", type="primary", disabled=not has_cover_accepted)
+                    
+                    if approve_button:
                         if not supervisor_name_input:
                             st.warning("Por favor, ingresa tu nombre de supervisor.")
                         elif supervisor_password_input != "Avianca2025*":
                             st.error("Contraseña del supervisor incorrecta.")
+                        elif not has_cover_accepted:
+                            st.error("No se puede aprobar esta solicitud porque el cubridor aún no la ha aceptado.")
                         else:
                             approval_container = st.container()
                             with approval_container:

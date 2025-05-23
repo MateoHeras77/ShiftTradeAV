@@ -74,7 +74,7 @@ if submit_button:
 
                 if token:
                     # 3. Create a unique link with the token for Streamlit Cloud
-                    accept_url = f"https://shifttradeav.streamlit.app/2_Solicitud?token={token}"
+                    accept_url = f"https://shifttrade.streamlit.app/2_Solicitud?token={token}"
 
                     # 4. Send the link by email to the covering employee
                     st.caption("Enviando correo electrónico...")

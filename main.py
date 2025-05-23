@@ -56,10 +56,8 @@ if submit_button:
                 progress_bar.progress(66)
 
                 if token:
-                    # 3. Create a unique link with the token
-                    # IMPORTANT: Ensure accept.py is running, potentially on a different port.
-                    # Example: streamlit run accept.py --server.port 8502
-                    accept_url = f"http://localhost:8502/?token={token}" # Assumes accept.py runs on port 8502
+                    # 3. Create a unique link with the token for Streamlit Cloud
+                    accept_url = f"https://shifttradeav.streamlit.app/accept?token={token}"
 
                     # 4. Send the link by email to the covering employee
                     st.caption("Enviando correo electrónico...")

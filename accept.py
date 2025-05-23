@@ -31,8 +31,9 @@ if not token:
     st.error("Token no proporcionado. Por favor, usa el enlace enviado a tu correo.")
     st.stop()
 
-# 1. Validate the token
-shift_request_id = utils.verify_token(str(token), PROJECT_ID) # Ensure token is string
+with st.spinner("Validando token..."):
+    # 1. Validate the token
+    shift_request_id = utils.verify_token(str(token), PROJECT_ID) # Ensure token is string
 
 if not shift_request_id:
     st.error("El token es inválido, ha expirado o ya ha sido utilizado.")
@@ -43,7 +44,8 @@ st.info(f"Token válido. Estás a punto de aceptar cubrir un turno.")
 st.write(f"ID de la solicitud de cambio: {shift_request_id}") # For debugging or info
 
 # Fetch shift request details to show some info (optional but good UX)
-request_details = utils.get_shift_request_details(shift_request_id, PROJECT_ID)
+with st.spinner("Cargando detalles del turno..."):
+    request_details = utils.get_shift_request_details(shift_request_id, PROJECT_ID)
 if request_details:
     st.markdown(f"""
     **Detalles del Turno a Cubrir:**
@@ -65,56 +67,75 @@ else:
 
 
 if st.button("✅ Aceptar Cambio de Turno"):
-    # 2. Update `date_accepted_by_cover` in `shift_requests`
-    #    Mark token as `used`
-    now_utc = datetime.utcnow().isoformat()
-    update_success = utils.update_shift_request_status(
-        shift_request_id,
-        {"date_accepted_by_cover": now_utc},
-        PROJECT_ID
-    )
-    token_marked = utils.mark_token_as_used(str(token), PROJECT_ID)
+    with st.spinner("Procesando la aceptación..."):
+        # 2. Update `date_accepted_by_cover` in `shift_requests`
+        #    Mark token as `used`
+        progress_bar = st.progress(0)
+        st.caption("Actualizando estado de la solicitud...")
+        now_utc = datetime.utcnow().isoformat()
+        update_success = utils.update_shift_request_status(
+            shift_request_id,
+            {"date_accepted_by_cover": now_utc},
+            PROJECT_ID
+        )
+        progress_bar.progress(33)
+        
+        st.caption("Marcando token como utilizado...")
+        token_marked = utils.mark_token_as_used(str(token), PROJECT_ID)
+        progress_bar.progress(50)
 
-    if update_success and token_marked:
-        st.success("¡Has aceptado cubrir el turno! Se enviarán correos de confirmación.")
+        if update_success and token_marked:
+            # Re-fetch details to get emails for confirmation
+            st.caption("Preparando correos de confirmación...")
+            updated_request_details = utils.get_shift_request_details(shift_request_id, PROJECT_ID)
+            progress_bar.progress(66)
+            
+            if updated_request_details:
+                requester_email = updated_request_details.get('requester_email')
+                cover_email = updated_request_details.get('cover_email') # Your email
+                requester_name = updated_request_details.get('requester_name')
+                cover_name = updated_request_details.get('cover_name')
+                flight_number = updated_request_details.get('flight_number')
 
-        # Re-fetch details to get emails for confirmation
-        updated_request_details = utils.get_shift_request_details(shift_request_id, PROJECT_ID)
-        if updated_request_details:
-            requester_email = updated_request_details.get('requester_email')
-            cover_email = updated_request_details.get('cover_email') # Your email
-            requester_name = updated_request_details.get('requester_name')
-            cover_name = updated_request_details.get('cover_name')
-            flight_number = updated_request_details.get('flight_number')
-
-            # 3. Send confirmation emails
-            confirmation_subject = "Confirmación de Cambio de Turno Aceptado"
-            # Email to requester
-            if requester_email:
-                requester_body = f"""Hola {requester_name},
+                # 3. Send confirmation emails
+                st.caption("Enviando correos de confirmación...")
+                confirmation_subject = "Confirmación de Cambio de Turno Aceptado"
+                emails_sent = True
+                
+                # Email to requester
+                if requester_email:
+                    requester_body = f"""Hola {requester_name},
 
 Buenas noticias. {cover_name} ha aceptado cubrir tu turno para el vuelo {flight_number}.
 La solicitud está ahora pendiente de aprobación por el supervisor.
 
 Saludos."""
-                utils.send_email(requester_email, confirmation_subject, requester_body)
+                    if not utils.send_email(requester_email, confirmation_subject, requester_body):
+                        emails_sent = False
+                progress_bar.progress(83)
 
-            # Email to cover (yourself)
-            if cover_email:
-                cover_body = f"""Hola {cover_name},
+                # Email to cover (yourself)
+                if cover_email:
+                    cover_body = f"""Hola {cover_name},
 
 Has aceptado cubrir el turno de {requester_name} para el vuelo {flight_number}.
 La solicitud está ahora pendiente de aprobación por el supervisor.
 
 Gracias por tu colaboración."""
-                utils.send_email(cover_email, confirmation_subject, cover_body)
+                    if not utils.send_email(cover_email, confirmation_subject, cover_body):
+                        emails_sent = False
+                progress_bar.progress(100)
 
-            st.balloons()
+                st.success("¡Has aceptado cubrir el turno!")
+                if emails_sent:
+                    st.info("Se han enviado correos de confirmación a ambas partes.")
+                else:
+                    st.warning("Se actualizó el estado, pero hubo un problema al enviar algunos correos de confirmación.")
+                st.balloons()
+            else:
+                st.warning("Se actualizó el estado, pero hubo un problema al obtener los detalles para enviar los correos de confirmación.")
         else:
-            st.warning("Se actualizó el estado, pero hubo un problema al enviar los correos de confirmación.")
-
-    else:
-        st.error("Hubo un error al procesar tu aceptación. Por favor, inténtalo de nuevo o contacta al administrador.")
+            st.error("Hubo un error al procesar tu aceptación. Por favor, inténtalo de nuevo o contacta al administrador.")
 
 st.markdown("---")
 st.caption("ShiftTradeAV - Aceptación de Turno")

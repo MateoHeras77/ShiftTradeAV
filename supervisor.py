@@ -16,12 +16,14 @@ if 'view_mode' not in st.session_state:
 
 st.sidebar.header("Acciones")
 if st.sidebar.button("Refrescar Datos"):
-    # Clear relevant session state to force data refresh if needed
-    if 'all_requests_for_history' in st.session_state:
-        del st.session_state.all_requests_for_history
-    if 'pending_requests_data' in st.session_state:
-        del st.session_state.pending_requests_data
-    st.rerun()
+    with st.sidebar.spinner("Refrescando datos..."):
+        st.sidebar.info("Limpiando caché y recargando información...")
+        # Clear relevant session state to force data refresh if needed
+        if 'all_requests_for_history' in st.session_state:
+            del st.session_state.all_requests_for_history
+        if 'pending_requests_data' in st.session_state:
+            del st.session_state.pending_requests_data
+        st.rerun()
 
 st.sidebar.markdown("---")
 
@@ -41,7 +43,8 @@ if st.session_state.view_mode == 'pending_requests':
     st.header("Solicitudes Pendientes de Aprobación")
     # 1. Display a list of all requests with `supervisor_status = 'pending'`
     if 'pending_requests_data' not in st.session_state:
-        st.session_state.pending_requests_data = utils.get_pending_requests(PROJECT_ID)
+        with st.spinner("Cargando solicitudes pendientes..."):
+            st.session_state.pending_requests_data = utils.get_pending_requests(PROJECT_ID)
     
     pending_requests = st.session_state.pending_requests_data
 
@@ -76,23 +79,41 @@ if st.session_state.view_mode == 'pending_requests':
                         elif supervisor_password_input != "Avianca2025*":
                             st.error("Contraseña del supervisor incorrecta.")
                         else:
-                            updates = {
-                                "supervisor_status": "approved",
-                                "supervisor_decision_date": datetime.utcnow().isoformat(),
-                                "supervisor_comments": supervisor_comments,
-                                "supervisor_name": supervisor_name_input
-                            }
-                            if utils.update_shift_request_status(req_id, updates, PROJECT_ID):
-                                st.success(f"Solicitud {req_id} aprobada por {supervisor_name_input}.")
-                                # 3. Notify both employees
-                                utils.send_email(req.get('requester_email'), "Cambio de Turno APROBADO", f"Tu solicitud de cambio para el vuelo {req.get('flight_number')} ha sido APROBADA por el supervisor {supervisor_name_input}. Comentarios: {supervisor_comments}")
-                                utils.send_email(req.get('cover_email'), "Cambio de Turno APROBADO", f"El cambio de turno que aceptaste cubrir para el vuelo {req.get('flight_number')} ha sido APROBADO por el supervisor {supervisor_name_input}. Comentarios: {supervisor_comments}")
-                                # Clear pending requests cache and rerun
-                                if 'pending_requests_data' in st.session_state:
-                                    del st.session_state.pending_requests_data
-                                st.rerun()
-                            else:
-                                st.error(f"Error al aprobar la solicitud {req_id}.")
+                            approval_container = st.container()
+                            with approval_container:
+                                with st.spinner(f"Aprobando solicitud {req_id}..."):
+                                    progress_bar = st.progress(0)
+                                    st.caption("Actualizando estado en la base de datos...")
+                                    updates = {
+                                        "supervisor_status": "approved",
+                                        "supervisor_decision_date": datetime.utcnow().isoformat(),
+                                        "supervisor_comments": supervisor_comments,
+                                        "supervisor_name": supervisor_name_input
+                                    }
+                                    update_success = utils.update_shift_request_status(req_id, updates, PROJECT_ID)
+                                    progress_bar.progress(50)
+                                    
+                                    if update_success:
+                                        st.caption("Enviando notificaciones por correo...")
+                                        # 3. Notify both employees
+                                        email1 = utils.send_email(req.get('requester_email'), 
+                                                 "Cambio de Turno APROBADO", 
+                                                 f"Tu solicitud de cambio para el vuelo {req.get('flight_number')} ha sido APROBADA por el supervisor {supervisor_name_input}. Comentarios: {supervisor_comments}")
+                                        email2 = utils.send_email(req.get('cover_email'), 
+                                                 "Cambio de Turno APROBADO", 
+                                                 f"El cambio de turno que aceptaste cubrir para el vuelo {req.get('flight_number')} ha sido APROBADO por el supervisor {supervisor_name_input}. Comentarios: {supervisor_comments}")
+                                        progress_bar.progress(100)
+                                        
+                                        st.success(f"Solicitud {req_id} aprobada por {supervisor_name_input}.")
+                                        if not (email1 and email2):
+                                            st.warning("La aprobación fue guardada, pero hubo problemas al enviar algunas notificaciones por correo.")
+                                        
+                                        # Clear pending requests cache and rerun
+                                        if 'pending_requests_data' in st.session_state:
+                                            del st.session_state.pending_requests_data
+                                        st.rerun()
+                                    else:
+                                        st.error(f"Error al aprobar la solicitud {req_id}.")
 
                 with col2:
                     if st.button("❌ Rechazar", key=f"reject_{req_id}"):
@@ -103,21 +124,39 @@ if st.session_state.view_mode == 'pending_requests':
                         elif not supervisor_comments:
                             st.warning("Por favor, añade un comentario explicando el motivo del rechazo.")
                         else:
-                            updates = {
-                                "supervisor_status": "rejected",
-                                "supervisor_decision_date": datetime.utcnow().isoformat(),
-                                "supervisor_comments": supervisor_comments,
-                                "supervisor_name": supervisor_name_input
-                            }
-                            if utils.update_shift_request_status(req_id, updates, PROJECT_ID):
-                                st.success(f"Solicitud {req_id} rechazada por {supervisor_name_input}.")
-                                # 3. Notify both employees
-                                utils.send_email(req.get('requester_email'), "Cambio de Turno RECHAZADO", f"Tu solicitud de cambio para el vuelo {req.get('flight_number')} ha sido RECHAZADA por el supervisor {supervisor_name_input}. Motivo: {supervisor_comments}")
-                                utils.send_email(req.get('cover_email'), "Cambio de Turno RECHAZADO", f"El cambio de turno que aceptaste cubrir para el vuelo {req.get('flight_number')} ha sido RECHAZADO por el supervisor {supervisor_name_input}. Motivo: {supervisor_comments}")
-                                # Clear pending requests cache and rerun
-                                if 'pending_requests_data' in st.session_state:
-                                    del st.session_state.pending_requests_data
-                                st.rerun()
+                            rejection_container = st.container()
+                            with rejection_container:
+                                with st.spinner(f"Rechazando solicitud {req_id}..."):
+                                    progress_bar = st.progress(0)
+                                    st.caption("Actualizando estado en la base de datos...")
+                                    updates = {
+                                        "supervisor_status": "rejected",
+                                        "supervisor_decision_date": datetime.utcnow().isoformat(),
+                                        "supervisor_comments": supervisor_comments,
+                                        "supervisor_name": supervisor_name_input
+                                    }
+                                    update_success = utils.update_shift_request_status(req_id, updates, PROJECT_ID)
+                                    progress_bar.progress(50)
+                                    
+                                    if update_success:
+                                        st.caption("Enviando notificaciones por correo...")
+                                        # 3. Notify both employees
+                                        email1 = utils.send_email(req.get('requester_email'), 
+                                                 "Cambio de Turno RECHAZADO", 
+                                                 f"Tu solicitud de cambio para el vuelo {req.get('flight_number')} ha sido RECHAZADA por el supervisor {supervisor_name_input}. Motivo: {supervisor_comments}")
+                                        email2 = utils.send_email(req.get('cover_email'), 
+                                                 "Cambio de Turno RECHAZADO", 
+                                                 f"El cambio de turno que aceptaste cubrir para el vuelo {req.get('flight_number')} ha sido RECHAZADO por el supervisor {supervisor_name_input}. Motivo: {supervisor_comments}")
+                                        progress_bar.progress(100)
+                                        
+                                        st.success(f"Solicitud {req_id} rechazada por {supervisor_name_input}.")
+                                        if not (email1 and email2):
+                                            st.warning("El rechazo fue guardado, pero hubo problemas al enviar algunas notificaciones por correo.")
+                                        
+                                        # Clear pending requests cache and rerun
+                                        if 'pending_requests_data' in st.session_state:
+                                            del st.session_state.pending_requests_data
+                                        st.rerun()
                 st.markdown("---")
 
 elif st.session_state.view_mode == 'history_view':
@@ -125,7 +164,8 @@ elif st.session_state.view_mode == 'history_view':
 
     # Fetch all requests (not just pending) for history, cache in session state
     if 'all_requests_for_history' not in st.session_state:
-        st.session_state.all_requests_for_history = utils.get_all_shift_requests(PROJECT_ID)
+        with st.spinner("Cargando historial de solicitudes..."):
+            st.session_state.all_requests_for_history = utils.get_all_shift_requests(PROJECT_ID)
     
     all_requests_for_history = st.session_state.all_requests_for_history
 

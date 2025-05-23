@@ -58,12 +58,12 @@ if request_details:
     
     **Información del Solicitante:**
     - **Nombre:** {request_details.get('requester_name', 'N/A')}
-    - **Número de Empleado:** {request_details.get('requester_employee_number', 'N/A')}
+    - **Número de Empleado (UKG):** {request_details.get('requester_employee_number', 'N/A')}
     - **Email:** {request_details.get('requester_email', 'N/A')}
 
     **Confirmación de Tus Datos (Quien Cubre):**
     - **Nombre:** {request_details.get('cover_name', 'N/A')}
-    - **Número de Empleado:** {request_details.get('cover_employee_number', 'N/A')}
+    - **Número de Empleado (UKG):** {request_details.get('cover_employee_number', 'N/A')}
     - **Email:** {request_details.get('cover_email', 'N/A')}
     """)
 else:

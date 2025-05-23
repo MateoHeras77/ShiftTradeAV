@@ -209,12 +209,13 @@ def get_shift_request_details(request_id: str, project_id: str):
         return None
 
 def get_all_shift_requests(project_id: str):
-    """Fetches all shift requests from the database, ordered by request date descending."""
+    """Fetches all shift requests from the database."""
     if not supabase:
         st.error("Cliente Supabase no inicializado. No se pueden obtener todas las solicitudes.")
         return []
     try:
-        response = supabase.table('shift_requests').select('*').order('date_request', desc=True).execute() # Ordering by date_request instead of created_at
+        # No aplicamos ordenamiento en la consulta para hacer el sorting en el frontend con más control
+        response = supabase.table('shift_requests').select('*').execute()
         return response.data if response.data else []
     except Exception as e:
         print(f"Exception fetching all shift requests: {e}")

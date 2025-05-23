@@ -217,7 +217,19 @@ elif st.session_state.view_mode == 'history_view':
             st.session_state.view_mode = 'pending_requests'
             st.rerun()
     else:
+        # Convertir la lista de solicitudes a DataFrame para facilitar manipulación
         df_history = pd.DataFrame(all_requests_for_history)
+        
+        # Ordenar por fecha de vuelo (convertir a datetime para ordenamiento correcto)
+        try:
+            # Convertir fecha_request a datetime para ordenar correctamente
+            df_history['date_request_dt'] = pd.to_datetime(df_history['date_request'], errors='coerce')
+            # Ordenar por fecha ascendente (más cercanas primero)
+            df_history = df_history.sort_values(by='date_request_dt').reset_index(drop=True)
+            # Eliminar columna auxiliar usada para ordenar
+            df_history = df_history.drop('date_request_dt', axis=1)
+        except Exception as e:
+            st.warning(f"No se pudo ordenar el historial por fecha: {e}")
         
         columns_to_display = [
             'id', 'date_request', 'flight_number', 'requester_name', 

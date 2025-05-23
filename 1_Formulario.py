@@ -5,7 +5,12 @@ import utils  # Your utility functions for Supabase, tokens, and email
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx" # Replace with your actual Supabase project ID
 
-st.set_page_config(page_title="Solicitud de Cambio de Turno", layout="centered")
+st.set_page_config(
+    page_title="Solicitar Cambio",
+    page_icon="✈️",
+    layout="centered"
+)
+
 
 st.title("✈️ Formulario de Solicitud de Cambio de Turno")
 
@@ -57,7 +62,7 @@ if submit_button:
 
                 if token:
                     # 3. Create a unique link with the token for Streamlit Cloud
-                    accept_url = f"https://shifttradeav.streamlit.app/accept?token={token}"
+                    accept_url = f"https://shifttradeav.streamlit.app/2_Solicitud?token={token}"
 
                     # 4. Send the link by email to the covering employee
                     st.caption("Enviando correo electrónico...")

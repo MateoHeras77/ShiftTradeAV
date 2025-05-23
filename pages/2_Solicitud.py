@@ -20,7 +20,11 @@ except ImportError as e:
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx" # Replace with your actual Supabase project ID
 
-st.set_page_config(page_title="Aceptar Cambio de Turno", layout="centered")
+st.set_page_config(
+    page_title="Aceptar Cambio",
+    page_icon="✔️",
+    layout="centered"
+)
 
 st.title("✔️ Aceptar Cambio de Turno")
 

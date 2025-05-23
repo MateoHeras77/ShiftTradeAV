@@ -6,7 +6,12 @@ import utils # Your utility functions
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx" # Replace with your actual Supabase project ID
 
-st.set_page_config(page_title="Panel del Supervisor", layout="wide")
+st.set_page_config(
+    page_title="Panel del Supervisor",
+    page_icon="👑",
+    layout="wide"
+)
+
 
 st.title("👑 Panel de Aprobación del Supervisor")
 

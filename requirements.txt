@@ -1,5 +1,7 @@
-streamlit==1.32.0
-pandas==2.1.0
-supabase==2.3.0
-python-dateutil==2.8.2
-pytz==2024.1
+# requirements.txt para ShiftTradeAV
+streamlit
+pandas
+supabase
+pytz
+python-dateutil
+email-validator

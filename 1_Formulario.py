@@ -22,7 +22,7 @@ st.title("✈️ Formulario de Solicitud de Cambio de Turno")
 
 with st.form("shift_request_form"):
     st.header("Detalles del Turno")
-    date_request_input = st.date_input("Fecha del turno original", value=datetime.today())
+    date_request_input = st.date_input("Fecha del turno a Cambiar", value=datetime.today())
     flight_number = st.text_input("Número de Vuelo")
 
     st.header("Empleado que Solicita el Cambio")

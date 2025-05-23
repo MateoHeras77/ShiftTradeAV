@@ -53,7 +53,7 @@ with st.spinner("Cargando detalles del turno..."):
 if request_details:
     st.markdown(f"""
     **Detalles del Turno a Cubrir:**
-    - **Fecha del Turno Original:** {utils.format_date(request_details.get('date_request', 'N/A'))}
+    - **Fecha del Turno a Cambiar:** {utils.format_date(request_details.get('date_request', 'N/A'))}
     - **Vuelo:** {request_details.get('flight_number', 'N/A')}
     
     **Información del Solicitante:**

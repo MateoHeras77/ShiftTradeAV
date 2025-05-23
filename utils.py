@@ -206,5 +206,18 @@ def get_shift_request_details(request_id: str, project_id: str):
         st.error(f"Excepción al obtener detalles de solicitud: {e}")
         return None
 
+def get_all_shift_requests(project_id: str):
+    """Fetches all shift requests from the database, ordered by request date descending."""
+    if not supabase:
+        st.error("Cliente Supabase no inicializado. No se pueden obtener todas las solicitudes.")
+        return []
+    try:
+        response = supabase.table('shift_requests').select('*').order('date_request', desc=True).execute() # Ordering by date_request instead of created_at
+        return response.data if response.data else []
+    except Exception as e:
+        print(f"Exception fetching all shift requests: {e}")
+        st.error(f"Excepción al obtener todas las solicitudes: {e}")
+        return []
+
 # Remember to install the Supabase Python library: pip install supabase
 # For smtplib, it's part of Python's standard library.

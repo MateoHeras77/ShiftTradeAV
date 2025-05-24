@@ -27,12 +27,12 @@ with st.form("shift_request_form"):
 
     st.header("Empleado que Solicita el Cambio")
     requester_name = st.text_input("Nombre del solicitante")
-    requester_employee_number = st.text_input("Color del RAIC")
+    requester_employee_number = st.text_input("Color del RAIC (Solicitante")
     requester_email = st.text_input("Email del solicitante", placeholder="ejemplo@empresa.com")
     
     st.header("Empleado que Cubrirá el Turno")
     cover_name = st.text_input("Nombre del compañero que cubrirá")
-    cover_employee_number = st.text_input("Color del RAIC")
+    cover_employee_number = st.text_input("Color del RAIC (Cubridor)")
     cover_email = st.text_input("Email del compañero que cubrirá", placeholder="compañero@empresa.com")
     st.caption("⚠️ Verifica cuidadosamente el email - es la única forma de contactar al compañero")
 

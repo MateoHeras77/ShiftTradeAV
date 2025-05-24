@@ -27,7 +27,7 @@ with st.form("shift_request_form"):
 
     st.header("Empleado que Solicita el Cambio")
     requester_name = st.text_input("Nombre del solicitante")
-    requester_employee_number = st.text_input("Color del RAIC (Solicitante")
+    requester_employee_number = st.text_input("Color del RAIC (Solicitante)")
     requester_email = st.text_input("Email del solicitante", placeholder="ejemplo@empresa.com")
     
     st.header("Empleado que Cubrirá el Turno")

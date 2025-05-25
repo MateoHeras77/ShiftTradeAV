@@ -121,6 +121,12 @@ with tab2:
 with tab3:
     st.header("Editar o Desactivar Empleado")
     
+    # Initialize session state for deactivation confirmation
+    if 'show_deactivate_confirm' not in st.session_state:
+        st.session_state.show_deactivate_confirm = False
+    if 'employee_to_deactivate' not in st.session_state:
+        st.session_state.employee_to_deactivate = None
+    
     if employees:
         employee_options = [f"{emp['full_name']} - {emp['raic_color']}" for emp in employees]
         selected_emp = st.selectbox("Seleccionar empleado", ["Seleccionar..."] + employee_options)
@@ -149,38 +155,58 @@ with tab3:
                         submit_update = st.form_submit_button("💾 Actualizar", type="primary")
                     
                     with col_deactivate:
-                        submit_deactivate = st.form_submit_button("🗑️ Desactivar", type="secondary")
+                        submit_deactivate = st.form_submit_button("🗑️ Solicitar Desactivación", type="secondary")
+                
+                # Handle form submissions
+                if submit_update:
+                    if not all([edit_name, edit_raic, edit_email]):
+                        st.error("Por favor, completa todos los campos.")
+                    elif not validate_email(edit_email):
+                        st.error("❌ El email no tiene un formato válido.")
+                    elif edit_name != selected_employee['full_name'] and utils.check_employee_exists(full_name=edit_name, project_id=PROJECT_ID):
+                        st.error("❌ Ya existe un empleado con ese nombre.")
+                    elif edit_email != selected_employee['email'] and utils.check_employee_exists(email=edit_email, project_id=PROJECT_ID):
+                        st.error("❌ Ya existe un empleado con ese email.")
+                    else:
+                        with st.spinner("Actualizando empleado..."):
+                            success = utils.update_employee(selected_employee['id'], edit_name, edit_raic, edit_email, PROJECT_ID)
+                            if success:
+                                st.success(f"✅ Empleado {edit_name} actualizado exitosamente.")
+                                st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
+                                st.rerun()
+                            else:
+                                st.error("❌ Error al actualizar el empleado.")
+                
+                if submit_deactivate:
+                    st.session_state.show_deactivate_confirm = True
+                    st.session_state.employee_to_deactivate = selected_employee
+                    st.rerun()
+                
+                # Show confirmation dialog outside of form
+                if st.session_state.show_deactivate_confirm and st.session_state.employee_to_deactivate:
+                    st.warning(f"⚠️ ¿Estás seguro de que quieres desactivar al empleado **{st.session_state.employee_to_deactivate['full_name']}**?")
+                    st.write("Esta acción ocultará al empleado de las listas desplegables en futuras solicitudes.")
                     
-                    if submit_update:
-                        if not all([edit_name, edit_raic, edit_email]):
-                            st.error("Por favor, completa todos los campos.")
-                        elif not validate_email(edit_email):
-                            st.error("❌ El email no tiene un formato válido.")
-                        elif edit_name != selected_employee['full_name'] and utils.check_employee_exists(full_name=edit_name, project_id=PROJECT_ID):
-                            st.error("❌ Ya existe un empleado con ese nombre.")
-                        elif edit_email != selected_employee['email'] and utils.check_employee_exists(email=edit_email, project_id=PROJECT_ID):
-                            st.error("❌ Ya existe un empleado con ese email.")
-                        else:
-                            with st.spinner("Actualizando empleado..."):
-                                success = utils.update_employee(selected_employee['id'], edit_name, edit_raic, edit_email, PROJECT_ID)
-                                if success:
-                                    st.success(f"✅ Empleado {edit_name} actualizado exitosamente.")
-                                    st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
-                                    st.rerun()
-                                else:
-                                    st.error("❌ Error al actualizar el empleado.")
+                    col_confirm, col_cancel = st.columns(2)
                     
-                    if submit_deactivate:
-                        st.warning("⚠️ ¿Estás seguro de que quieres desactivar este empleado?")
-                        if st.button("✅ Confirmar Desactivación"):
+                    with col_confirm:
+                        if st.button("✅ Confirmar Desactivación", type="primary"):
                             with st.spinner("Desactivando empleado..."):
-                                success = utils.deactivate_employee(selected_employee['id'], PROJECT_ID)
+                                success = utils.deactivate_employee(st.session_state.employee_to_deactivate['id'], PROJECT_ID)
                                 if success:
-                                    st.success(f"✅ Empleado {selected_employee['full_name']} desactivado exitosamente.")
+                                    st.success(f"✅ Empleado {st.session_state.employee_to_deactivate['full_name']} desactivado exitosamente.")
                                     st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
+                                    st.session_state.show_deactivate_confirm = False
+                                    st.session_state.employee_to_deactivate = None
                                     st.rerun()
                                 else:
                                     st.error("❌ Error al desactivar el empleado.")
+                    
+                    with col_cancel:
+                        if st.button("❌ Cancelar"):
+                            st.session_state.show_deactivate_confirm = False
+                            st.session_state.employee_to_deactivate = None
+                            st.rerun()
     else:
         st.info("No hay empleados para editar.")
 

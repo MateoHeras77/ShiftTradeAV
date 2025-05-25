@@ -153,12 +153,16 @@ if st.session_state.view_mode == 'pending_requests':
 ¡Excelentes noticias! Tu solicitud de cambio de turno ha sido APROBADA.
 
 **Detalles del cambio aprobado:**
-• Fecha de aprobación: {fecha_aprobacion}
 • Vuelo: {req.get('flight_number')}
 • Fecha del turno: {fecha_vuelo}
 • Compañero que cubre: {req.get('cover_name')}
-• Fecha de aceptación del compañero: {fecha_aceptacion}
 • Supervisor que aprobó: {supervisor_name_input}
+• Fecha de aprobación: {fecha_aprobacion}
+
+**Cronología:**
+1. Solicitud enviada ✅
+2. Aceptado por {req.get('cover_name')} el {fecha_aceptacion} ✅
+3. Aprobado por supervisor el {fecha_aprobacion} ✅
 
 **Comentarios del supervisor:** {supervisor_comments if supervisor_comments else "Sin comentarios adicionales"}
 
@@ -174,12 +178,16 @@ ShiftTradeAV"""
 El cambio de turno que aceptaste cubrir ha sido APROBADO por el supervisor.
 
 **Detalles del cambio aprobado:**
-• Fecha de aprobación: {fecha_aprobacion}
 • Vuelo: {req.get('flight_number')}
 • Fecha del turno: {fecha_vuelo}
 • Solicitante original: {req.get('requester_name')}
-• Tu fecha de aceptación: {fecha_aceptacion}
 • Supervisor que aprobó: {supervisor_name_input}
+• Fecha de aprobación: {fecha_aprobacion}
+
+**Cronología:**
+1. Solicitud enviada ✅
+2. Tú aceptaste el {fecha_aceptacion} ✅
+3. Aprobado por supervisor el {fecha_aprobacion} ✅
 
 **Comentarios del supervisor:** {supervisor_comments if supervisor_comments else "Sin comentarios adicionales"}
 
@@ -242,12 +250,16 @@ ShiftTradeAV"""
 Lamentamos informarte que tu solicitud de cambio de turno ha sido RECHAZADA.
 
 **Detalles de la solicitud rechazada:**
-• Fecha de rechazo: {fecha_rechazo}
 • Vuelo: {req.get('flight_number')}
 • Fecha del turno: {fecha_vuelo}
 • Compañero que había aceptado: {req.get('cover_name')}
-• Fecha de aceptación del compañero: {fecha_aceptacion}
 • Supervisor que rechazó: {supervisor_name_input}
+• Fecha de rechazo: {fecha_rechazo}
+
+**Cronología:**
+1. Solicitud enviada ✅
+2. Aceptado por {req.get('cover_name')} el {fecha_aceptacion} ✅
+3. Rechazado por supervisor el {fecha_rechazo} ❌
 
 **Motivo del rechazo:** {supervisor_comments}
 
@@ -263,12 +275,16 @@ ShiftTradeAV"""
 Te informamos que el cambio de turno que habías aceptado cubrir ha sido RECHAZADO por el supervisor.
 
 **Detalles de la solicitud rechazada:**
-• Fecha de rechazo: {fecha_rechazo}
 • Vuelo: {req.get('flight_number')}
 • Fecha del turno: {fecha_vuelo}
 • Solicitante original: {req.get('requester_name')}
-• Tu fecha de aceptación: {fecha_aceptacion}
 • Supervisor que rechazó: {supervisor_name_input}
+• Fecha de rechazo: {fecha_rechazo}
+
+**Cronología:**
+1. Solicitud enviada ✅
+2. Tú aceptaste el {fecha_aceptacion} ✅
+3. Rechazado por supervisor el {fecha_rechazo} ❌
 
 **Motivo del rechazo:** {supervisor_comments}
 

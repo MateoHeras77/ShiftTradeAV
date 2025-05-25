@@ -48,18 +48,22 @@ if not st.session_state.admin_authenticated:
 # Load employees data
 if 'employees_data' not in st.session_state:
     st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
+if 'inactive_employees_data' not in st.session_state:
+    st.session_state.inactive_employees_data = utils.get_inactive_employees(PROJECT_ID)
 
 # Refresh employees data
 col1, col2 = st.columns([3, 1])
 with col2:
     if st.button("🔄 Actualizar Lista"):
         st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
+        st.session_state.inactive_employees_data = utils.get_inactive_employees(PROJECT_ID)
         st.rerun()
 
 employees = st.session_state.employees_data
+inactive_employees = st.session_state.inactive_employees_data
 
 # Tabs for different actions
-tab1, tab2, tab3 = st.tabs(["📋 Lista de Empleados", "➕ Agregar Empleado", "✏️ Editar/Desactivar"])
+tab1, tab2, tab3, tab4 = st.tabs(["📋 Lista de Empleados", "➕ Agregar Empleado", "✏️ Editar/Desactivar", "🗂️ Desactivados"])
 
 with tab1:
     st.header("Lista de Empleados Activos")
@@ -114,6 +118,7 @@ with tab2:
                     if success:
                         st.success(f"✅ Empleado {new_name} agregado exitosamente.")
                         st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
+                        st.session_state.inactive_employees_data = utils.get_inactive_employees(PROJECT_ID)
                         st.rerun()
                     else:
                         st.error("❌ Error al agregar el empleado.")
@@ -173,6 +178,7 @@ with tab3:
                             if success:
                                 st.success(f"✅ Empleado {edit_name} actualizado exitosamente.")
                                 st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
+                                st.session_state.inactive_employees_data = utils.get_inactive_employees(PROJECT_ID)
                                 st.rerun()
                             else:
                                 st.error("❌ Error al actualizar el empleado.")
@@ -196,6 +202,7 @@ with tab3:
                                 if success:
                                     st.success(f"✅ Empleado {st.session_state.employee_to_deactivate['full_name']} desactivado exitosamente.")
                                     st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
+                                    st.session_state.inactive_employees_data = utils.get_inactive_employees(PROJECT_ID)
                                     st.session_state.show_deactivate_confirm = False
                                     st.session_state.employee_to_deactivate = None
                                     st.rerun()
@@ -209,6 +216,68 @@ with tab3:
                             st.rerun()
     else:
         st.info("No hay empleados para editar.")
+
+with tab4:
+    st.header("Empleados Desactivados")
+    
+    # Initialize session state for reactivation confirmation
+    if 'show_reactivate_confirm' not in st.session_state:
+        st.session_state.show_reactivate_confirm = False
+    if 'employee_to_reactivate' not in st.session_state:
+        st.session_state.employee_to_reactivate = None
+    
+    if inactive_employees:
+        st.write(f"**Total de empleados desactivados:** {len(inactive_employees)}")
+        st.caption("Los empleados desactivados no aparecen en las listas desplegables del formulario principal.")
+        
+        # Display inactive employees in a table format
+        for i, emp in enumerate(inactive_employees, 1):
+            with st.expander(f"{i}. {emp['full_name']} - {emp['raic_color']} (DESACTIVADO)"):
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.write(f"**Nombre:** {emp['full_name']}")
+                with col2:
+                    st.write(f"**RAIC:** {emp['raic_color']}")
+                with col3:
+                    st.write(f"**Email:** {emp['email']}")
+                with col4:
+                    if st.button(f"🔄 Reactivar", key=f"reactivate_{emp['id']}"):
+                        st.session_state.show_reactivate_confirm = True
+                        st.session_state.employee_to_reactivate = emp
+                        st.rerun()
+                
+                st.write(f"**Creado:** {utils.format_date(emp['created_at'])}")
+                st.write(f"**Desactivado:** {utils.format_date(emp['updated_at'])}")
+        
+        # Show confirmation dialog for reactivation
+        if st.session_state.show_reactivate_confirm and st.session_state.employee_to_reactivate:
+            st.success(f"🔄 ¿Quieres reactivar al empleado **{st.session_state.employee_to_reactivate['full_name']}**?")
+            st.write("Esta acción volverá a mostrar al empleado en las listas desplegables del formulario principal.")
+            
+            col_confirm, col_cancel = st.columns(2)
+            
+            with col_confirm:
+                if st.button("✅ Confirmar Reactivación", type="primary"):
+                    with st.spinner("Reactivando empleado..."):
+                        success = utils.reactivate_employee(st.session_state.employee_to_reactivate['id'], PROJECT_ID)
+                        if success:
+                            st.success(f"✅ Empleado {st.session_state.employee_to_reactivate['full_name']} reactivado exitosamente.")
+                            st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
+                            st.session_state.inactive_employees_data = utils.get_inactive_employees(PROJECT_ID)
+                            st.session_state.show_reactivate_confirm = False
+                            st.session_state.employee_to_reactivate = None
+                            st.rerun()
+                        else:
+                            st.error("❌ Error al reactivar el empleado.")
+            
+            with col_cancel:
+                if st.button("❌ Cancelar Reactivación"):
+                    st.session_state.show_reactivate_confirm = False
+                    st.session_state.employee_to_reactivate = None
+                    st.rerun()
+    else:
+        st.info("No hay empleados desactivados.")
+        st.write("✨ ¡Excelente! Todos los empleados están activos en el sistema.")
 
 st.markdown("---")
 st.caption("⚠️ **Nota importante:** Los cambios en la base de datos de empleados afectarán todas las futuras solicitudes de cambio de turno.")

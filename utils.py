@@ -379,6 +379,50 @@ def deactivate_employee(employee_id: int, project_id: str):
         st.error(f"Error al desactivar empleado: {e}")
         return False
 
+def reactivate_employee(employee_id: int, project_id: str):
+    """Reactivate an employee."""
+    if not supabase:
+        st.error("Cliente Supabase no inicializado.")
+        return False
+    
+    try:
+        response = supabase.table('employees').update({
+            'is_active': True,
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }).eq('id', employee_id).execute()
+        
+        if response.data and len(response.data) > 0:
+            print(f"Employee {employee_id} reactivated successfully")
+            return True
+        else:
+            print("Error reactivating employee or no data returned.")
+            return False
+            
+    except Exception as e:
+        print(f"Error reactivating employee: {e}")
+        st.error(f"Error al reactivar empleado: {e}")
+        return False
+
+def get_inactive_employees(project_id: str):
+    """Get all inactive employees from the database."""
+    if not supabase:
+        st.error("Cliente Supabase no inicializado.")
+        return []
+    
+    try:
+        response = supabase.table('employees').select('*').eq('is_active', False).order('full_name').execute()
+        
+        if response.data:
+            return response.data
+        else:
+            print("No inactive employees found or error in response.")
+            return []
+            
+    except Exception as e:
+        print(f"Error fetching inactive employees: {e}")
+        st.error(f"Error al obtener la lista de empleados inactivos: {e}")
+        return []
+
 # Función para formatear fechas al formato "año-mes-día (Nombre del día)"
 def format_date(date_str):
     """Convierte una cadena de fecha ISO 8601 a formato 'año-mes-día (Nombre del día)'"""

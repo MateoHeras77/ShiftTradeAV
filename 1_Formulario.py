@@ -20,28 +20,106 @@ st.set_page_config(
 
 st.title("✈️ Formulario de Solicitud de Cambio de Turno")
 
-with st.form("shift_request_form"):
-    st.header("Detalles del Turno")
-    date_request_input = st.date_input("Fecha del turno a Cambiar", value=datetime.today())
-    flight_number = st.text_input("Número de Vuelo")
+# Load employees data for dropdowns
+if 'employees_data' not in st.session_state:
+    with st.spinner("Cargando lista de empleados..."):
+        st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
 
-    st.header("Empleado que Solicita el Cambio")
+employees = st.session_state.employees_data
+
+# Check if there are employees in the database
+if not employees:
+    st.warning("⚠️ No se encontraron empleados en la base de datos.")
+    st.info("💡 Contacta al administrador para que agregue empleados al sistema.")
+    st.stop()
+
+employee_names = ["Seleccionar empleado..."] + [emp['full_name'] for emp in employees]
+
+# Initialize session state for form data
+if 'requester_data' not in st.session_state:
+    st.session_state.requester_data = {}
+if 'cover_data' not in st.session_state:
+    st.session_state.cover_data = {}
+
+# Add refresh button for employee list
+col1, col2 = st.columns([3, 1])
+with col2:
+    if st.button("🔄 Actualizar Lista"):
+        st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
+        st.rerun()
+
+# Form sections outside of st.form for better reactivity
+st.header("Detalles del Turno")
+date_request_input = st.date_input("Fecha del turno a Cambiar", value=datetime.today())
+flight_number = st.text_input("Número de Vuelo")
+
+st.header("Empleado que Solicita el Cambio")
+
+# Dropdown for requester
+selected_requester = st.selectbox("Seleccionar solicitante", employee_names, key="requester_select")
+
+# Auto-fill fields for requester
+if selected_requester != "Seleccionar empleado...":
+    requester_employee = next((emp for emp in employees if emp['full_name'] == selected_requester), None)
+    if requester_employee:
+        st.session_state.requester_data = requester_employee
+        requester_name = st.text_input("Nombre del solicitante", value=requester_employee['full_name'], disabled=True)
+        requester_employee_number = st.text_input("Color del RAIC (Solicitante)", value=requester_employee['raic_color'], disabled=True)
+        requester_email = st.text_input("Email del solicitante", value=requester_employee['email'], disabled=True)
+    else:
+        requester_name = st.text_input("Nombre del solicitante")
+        requester_employee_number = st.text_input("Color del RAIC (Solicitante)")
+        requester_email = st.text_input("Email del solicitante", placeholder="ejemplo@empresa.com")
+else:
     requester_name = st.text_input("Nombre del solicitante")
     requester_employee_number = st.text_input("Color del RAIC (Solicitante)")
     requester_email = st.text_input("Email del solicitante", placeholder="ejemplo@empresa.com")
-    
-    st.header("Empleado que Cubrirá el Turno")
+
+# Option to add manual data if not in dropdown
+if selected_requester == "Seleccionar empleado...":
+    st.caption("💡 ¿El empleado no está en la lista? Completa manualmente los campos o contacta al administrador para agregarlo al sistema.")
+
+st.header("Empleado que Cubrirá el Turno")
+
+# Dropdown for cover employee
+selected_cover = st.selectbox("Seleccionar compañero que cubrirá", employee_names, key="cover_select")
+
+# Prevent selecting the same person for both roles
+if selected_requester != "Seleccionar empleado..." and selected_cover == selected_requester:
+    st.error("❌ El solicitante y el compañero que cubrirá no pueden ser la misma persona.")
+
+# Auto-fill fields for cover employee
+if selected_cover != "Seleccionar empleado...":
+    cover_employee = next((emp for emp in employees if emp['full_name'] == selected_cover), None)
+    if cover_employee:
+        st.session_state.cover_data = cover_employee
+        cover_name = st.text_input("Nombre del compañero que cubrirá", value=cover_employee['full_name'], disabled=True)
+        cover_employee_number = st.text_input("Color del RAIC (Cubridor)", value=cover_employee['raic_color'], disabled=True)
+        cover_email = st.text_input("Email del compañero que cubrirá", value=cover_employee['email'], disabled=True)
+    else:
+        cover_name = st.text_input("Nombre del compañero que cubrirá")
+        cover_employee_number = st.text_input("Color del RAIC (Cubridor)")
+        cover_email = st.text_input("Email del compañero que cubrirá", placeholder="compañero@empresa.com")
+else:
     cover_name = st.text_input("Nombre del compañero que cubrirá")
     cover_employee_number = st.text_input("Color del RAIC (Cubridor)")
     cover_email = st.text_input("Email del compañero que cubrirá", placeholder="compañero@empresa.com")
-    st.caption("⚠️ Verifica cuidadosamente el email - es la única forma de contactar al compañero")
 
-    submit_button = st.form_submit_button("Enviar Solicitud")
+# Option to add manual data if not in dropdown
+if selected_cover == "Seleccionar empleado...":
+    st.caption("💡 ¿El empleado no está en la lista? Completa manualmente los campos o contacta al administrador para agregarlo al sistema.")
+
+st.caption("⚠️ Verifica cuidadosamente el email - es la única forma de contactar al compañero")
+
+# Submit button outside of form
+submit_button = st.button("Enviar Solicitud", type="primary")
 
 if submit_button:
     # Validation checks
     if not all([date_request_input, flight_number, requester_name, requester_employee_number, requester_email, cover_name, cover_employee_number, cover_email]):
         st.error("Por favor, completa todos los campos.")
+    elif selected_requester != "Seleccionar empleado..." and selected_cover == selected_requester:
+        st.error("❌ El solicitante y el compañero que cubrirá no pueden ser la misma persona.")
     elif not validate_email(requester_email):
         st.error("❌ El email del solicitante no tiene un formato válido. Por favor, verifica que incluya @ y un dominio válido.")
     elif not validate_email(cover_email):

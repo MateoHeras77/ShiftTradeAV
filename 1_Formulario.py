@@ -51,7 +51,22 @@ with col2:
 # Form sections outside of st.form for better reactivity
 st.header("Detalles del Turno")
 date_request_input = st.date_input("Fecha del turno a Cambiar", value=datetime.today())
-flight_number = st.text_input("Número de Vuelo")
+
+# Flight options with schedules
+flight_options = [
+    "Seleccionar vuelo...",
+    "AV255 (5:00-10:00)",
+    "AV627 (13:00-17:30)", 
+    "AV205 (20:00-23:59)"
+]
+
+selected_flight = st.selectbox("Número de Vuelo", flight_options)
+
+# Extract just the flight number for storage
+if selected_flight != "Seleccionar vuelo...":
+    flight_number = selected_flight.split(" ")[0]  # Extract AV255, AV627, or AV205
+else:
+    flight_number = ""
 
 st.header("Empleado que Solicita el Cambio")
 

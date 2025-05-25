@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone, date # Import date
 from email.mime.text import MIMEText
 from supabase import create_client, Client # Import Supabase client
 import locale
+import pytz  # For timezone handling
 
 # Supabase configuration
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
@@ -566,17 +567,28 @@ def create_calendar_file(shift_data, is_for_requester=True):
             start_time = "09:00"  # Default
             end_time = "17:00"    # Default
         
-        # Create datetime objects for the shift
-        shift_start = datetime.combine(shift_date, datetime.strptime(start_time, "%H:%M").time())
-        shift_end = datetime.combine(shift_date, datetime.strptime(end_time, "%H:%M").time())
+        # Create datetime objects for the shift in Toronto timezone
+        toronto_tz = pytz.timezone('America/Toronto')
+        
+        # Create naive datetime objects first
+        shift_start_naive = datetime.combine(shift_date, datetime.strptime(start_time, "%H:%M").time())
+        shift_end_naive = datetime.combine(shift_date, datetime.strptime(end_time, "%H:%M").time())
+        
+        # Localize to Toronto timezone
+        shift_start = toronto_tz.localize(shift_start_naive)
+        shift_end = toronto_tz.localize(shift_end_naive)
+        
+        # Convert to UTC for iCal format
+        shift_start_utc = shift_start.astimezone(pytz.UTC)
+        shift_end_utc = shift_end.astimezone(pytz.UTC)
         
         # Format for iCal (UTC)
         def format_datetime_for_ical(dt):
-            return dt.strftime('%Y%m%dT%H%M%S')
+            return dt.strftime('%Y%m%dT%H%M%SZ')  # Added Z suffix for UTC
         
-        # Current timestamp for DTSTAMP
-        now = datetime.now()
-        dtstamp = format_datetime_for_ical(now)
+        # Current timestamp for DTSTAMP in UTC
+        now_utc = datetime.now(pytz.UTC)
+        dtstamp = format_datetime_for_ical(now_utc)
         
         # Generate unique ID
         event_uid = f"shift-change-{shift_data.get('id', uuid.uuid4())}"
@@ -603,8 +615,8 @@ METHOD:PUBLISH
 BEGIN:VEVENT
 UID:{event_uid}
 DTSTAMP:{dtstamp}
-DTSTART:{format_datetime_for_ical(shift_start)}
-DTEND:{format_datetime_for_ical(shift_end)}
+DTSTART:{format_datetime_for_ical(shift_start_utc)}
+DTEND:{format_datetime_for_ical(shift_end_utc)}
 SUMMARY:{summary}
 DESCRIPTION:{description}
 LOCATION:Avianca

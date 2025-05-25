@@ -196,8 +196,21 @@ Gracias por tu colaboración. El cambio está oficialmente autorizado.
 Saludos,
 ShiftTradeAV"""
 
-                                        email1 = utils.send_email(req.get('requester_email'), requester_subject, requester_body)
-                                        email2 = utils.send_email(req.get('cover_email'), cover_subject, cover_body)
+                                        # Send emails with calendar attachments
+                                        email1 = utils.send_email_with_calendar(
+                                            req.get('requester_email'), 
+                                            requester_subject, 
+                                            requester_body,
+                                            req,  # shift_data
+                                            is_for_requester=True
+                                        )
+                                        email2 = utils.send_email_with_calendar(
+                                            req.get('cover_email'), 
+                                            cover_subject, 
+                                            cover_body,
+                                            req,  # shift_data
+                                            is_for_requester=False
+                                        )
                                         progress_bar.progress(100)
                                         
                                         st.success(f"Solicitud {req_id} aprobada por {supervisor_name_input}.")

@@ -127,6 +127,72 @@ def send_email(recipient_email, subject, body):
         st.error(f"Error al enviar correo a {recipient_email}: {e}")
         return False
 
+def send_email_with_calendar(recipient_email, subject, body, shift_data, is_for_requester=True):
+    """
+    Sends an email with a calendar attachment.
+    
+    Args:
+        recipient_email: Email address of recipient
+        subject: Email subject
+        body: Email body text
+        shift_data: Dictionary containing shift information for calendar creation
+        is_for_requester: Boolean, True if calendar is for the person requesting the shift change
+    
+    Returns:
+        Boolean indicating success
+    """
+    try:
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+        from email.mime.base import MIMEBase
+        from email import encoders
+        import tempfile
+        import os
+        
+        # Create the message
+        msg = MIMEMultipart()
+        msg['Subject'] = subject
+        msg['From'] = SENDER_EMAIL
+        msg['To'] = recipient_email
+        
+        # Add body
+        msg.attach(MIMEText(body, 'plain'))
+        
+        # Create calendar file
+        calendar_content = create_calendar_file(shift_data, is_for_requester)
+        
+        if calendar_content:
+            # Create temporary calendar file
+            person_type = "solicitante" if is_for_requester else "cobertura"
+            filename = f"turno_{person_type}_{shift_data.get('flight_number', 'AV')}.ics"
+            
+            # Create attachment
+            calendar_attachment = MIMEBase('text', 'calendar')
+            calendar_attachment.set_payload(calendar_content.encode('utf-8'))
+            encoders.encode_base64(calendar_attachment)
+            calendar_attachment.add_header(
+                'Content-Disposition',
+                f'attachment; filename="{filename}"'
+            )
+            calendar_attachment.add_header('Content-Type', 'text/calendar; method=PUBLISH')
+            
+            msg.attach(calendar_attachment)
+        
+        # Send email
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
+        
+        print(f"Email with calendar sent to {recipient_email}")
+        return True
+        
+    except Exception as e:
+        print(f"Error sending email with calendar to {recipient_email}: {e}")
+        st.error(f"Error al enviar correo con calendario a {recipient_email}: {e}")
+        # Fallback to regular email
+        return send_email(recipient_email, subject, body)
+
 def save_shift_request(details: dict, project_id: str):
     """Saves shift request details to Supabase and returns the new request's ID."""
     if not supabase:
@@ -461,6 +527,130 @@ def format_date(date_str):
     except (ValueError, TypeError) as e:
         print(f"Error al formatear la fecha {date_str}: {e}")
         return str(date_str)  # Devolver la cadena original en caso de error
+
+def create_calendar_file(shift_data, is_for_requester=True):
+    """
+    Creates an .ics calendar file for a shift change.
+    
+    Args:
+        shift_data: Dictionary containing shift information (from shift_requests table)
+        is_for_requester: Boolean, True if calendar is for the person requesting the shift change
+    
+    Returns:
+        String containing the .ics file content
+    """
+    try:
+        # Parse the shift date from shift_data
+        shift_date_str = shift_data.get('date_request', shift_data.get('date'))
+        if isinstance(shift_date_str, str):
+            shift_date = datetime.fromisoformat(shift_date_str.replace('Z', '+00:00')).date()
+        elif isinstance(shift_date_str, date):
+            shift_date = shift_date_str
+        else:
+            shift_date = datetime.now().date()
+        
+        # Extract flight information
+        flight_info = shift_data.get('flight_number', 'Vuelo no especificado')
+        
+        # Determine schedule based on flight
+        if 'AV255' in flight_info:
+            start_time = "05:00"
+            end_time = "10:00"
+        elif 'AV627' in flight_info:
+            start_time = "13:00"
+            end_time = "17:30"
+        elif 'AV205' in flight_info:
+            start_time = "20:00"
+            end_time = "23:59"
+        else:
+            start_time = "09:00"  # Default
+            end_time = "17:00"    # Default
+        
+        # Create datetime objects for the shift
+        shift_start = datetime.combine(shift_date, datetime.strptime(start_time, "%H:%M").time())
+        shift_end = datetime.combine(shift_date, datetime.strptime(end_time, "%H:%M").time())
+        
+        # Format for iCal (UTC)
+        def format_datetime_for_ical(dt):
+            return dt.strftime('%Y%m%dT%H%M%S')
+        
+        # Current timestamp for DTSTAMP
+        now = datetime.now()
+        dtstamp = format_datetime_for_ical(now)
+        
+        # Generate unique ID
+        event_uid = f"shift-change-{shift_data.get('id', uuid.uuid4())}"
+        
+        # Determine event title and description based on who the calendar is for
+        if is_for_requester:
+            # For the person who requested the change - they are GIVING UP this shift
+            summary = f"TURNO CEDIDO: {flight_info}"
+            description = f"Turno cedido - Intercambio aprobado\\nCubierto por: {shift_data.get('cover_name', 'N/A')}\\nSupervisor: {shift_data.get('supervisor_name', 'N/A')}"
+            status = "CANCELLED"
+        else:
+            # For the person covering the shift - they are TAKING this shift
+            summary = f"TURNO ACEPTADO: {flight_info}"
+            description = f"Turno aceptado por intercambio\\nSolicitante original: {shift_data.get('requester_name', 'N/A')}\\nSupervisor: {shift_data.get('supervisor_name', 'N/A')}"
+            status = "CONFIRMED"
+        
+        # Create iCal content with single event
+        ical_content = f"""BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ShiftTradeAV//Shift Management//ES
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+
+BEGIN:VEVENT
+UID:{event_uid}
+DTSTAMP:{dtstamp}
+DTSTART:{format_datetime_for_ical(shift_start)}
+DTEND:{format_datetime_for_ical(shift_end)}
+SUMMARY:{summary}
+DESCRIPTION:{description}
+LOCATION:Avianca
+STATUS:{status}
+SEQUENCE:1
+END:VEVENT
+
+END:VCALENDAR"""
+        
+        return ical_content
+        
+    except Exception as e:
+        print(f"Error creating calendar file: {e}")
+        return None
+
+def save_calendar_file(shift_data, is_for_requester=True, filename_prefix="shift_change"):
+    """
+    Creates and saves a calendar file to a temporary location.
+    
+    Args:
+        shift_data: Dictionary containing shift information
+        is_for_requester: Boolean, True if calendar is for the person requesting the shift change
+        filename_prefix: String prefix for the filename
+    
+    Returns:
+        Tuple of (file_path, calendar_content) or (None, None) if error
+    """
+    try:
+        import tempfile
+        import os
+        
+        calendar_content = create_calendar_file(shift_data, is_for_requester)
+        if not calendar_content:
+            return None, None
+        
+        # Create a temporary file
+        suffix = "_solicitante.ics" if is_for_requester else "_cobertura.ics"
+        with tempfile.NamedTemporaryFile(mode='w', suffix=suffix, prefix=filename_prefix, delete=False) as temp_file:
+            temp_file.write(calendar_content)
+            temp_file_path = temp_file.name
+        
+        return temp_file_path, calendar_content
+        
+    except Exception as e:
+        print(f"Error saving calendar file: {e}")
+        return None, None
 
 # Remember to install the Supabase Python library: pip install supabase
 # For smtplib, it's part of Python's standard library.

@@ -12,12 +12,28 @@ st.set_page_config(
     layout="wide"
 )
 
+# --- Password Protection ---
+if 'supervisor_authenticated' not in st.session_state:
+    st.session_state.supervisor_authenticated = False
+
+if not st.session_state.supervisor_authenticated:
+    st.title("👑 Panel de Aprobación del Supervisor") # Show title before password
+    st.warning("🔒 Área restringida - Se requiere contraseña de supervisor")
+    supervisor_login_password = st.text_input("Contraseña de supervisor", type="password", key="supervisor_page_password")
+    
+    if st.button("Acceder", key="supervisor_login_button"):
+        if supervisor_login_password == "supervisor123": # Temporary password
+            st.session_state.supervisor_authenticated = True
+            st.success("✅ Acceso concedido") # This message will be briefly shown before rerun
+            st.rerun()
+        else:
+            st.error("❌ Contraseña incorrecta")
+    # Hide sidebar and the rest of the page if not authenticated
+    st.sidebar.empty() # Clear sidebar
+    st.stop() # Stop further execution if not authenticated
+# --- End Password Protection ---
 
 st.title("👑 Panel de Aprobación del Supervisor")
-
-# Initialize session state for view mode if it doesn't exist
-if 'view_mode' not in st.session_state:
-    st.session_state.view_mode = 'pending_requests' # Default view
 
 st.sidebar.header("Acciones")
 if st.sidebar.button("Refrescar Datos"):
@@ -25,30 +41,16 @@ if st.sidebar.button("Refrescar Datos"):
     refresh_status = st.sidebar.empty()
     refresh_status.info("Refrescando datos...")
     # Clear relevant session state to force data refresh if needed
-    if 'all_requests_for_history' in st.session_state:
-        del st.session_state.all_requests_for_history
     if 'pending_requests_data' in st.session_state:
         del st.session_state.pending_requests_data
     st.rerun()
 
 st.sidebar.markdown("---")
 
-# Sidebar buttons to switch views
-if st.sidebar.button("Ver Solicitudes Pendientes", key="view_pending"):
-    st.session_state.view_mode = 'pending_requests'
-    st.rerun()
-
-if st.sidebar.button("Ver Historial de Solicitudes", key="view_history"):
-    st.session_state.view_mode = 'history_view'
-    st.rerun()
-
-st.sidebar.markdown("---")
-
-# Main panel content based on view_mode
-if st.session_state.view_mode == 'pending_requests':
-    st.header("Solicitudes Pendientes de Aprobación")
-    # 1. Display a list of all requests with `supervisor_status = 'pending'`
-    if 'pending_requests_data' not in st.session_state:
+# Main panel content is now only for pending_requests
+st.header("Solicitudes Pendientes de Aprobación")
+# 1. Display a list of all requests with `supervisor_status = 'pending'`
+if 'pending_requests_data' not in st.session_state:
         with st.spinner("Cargando solicitudes pendientes..."):
             st.session_state.pending_requests_data = utils.get_pending_requests(PROJECT_ID)
     
@@ -56,10 +58,6 @@ if st.session_state.view_mode == 'pending_requests':
 
     if not pending_requests:
         st.info("No hay solicitudes de cambio de turno pendientes de aprobación.")
-        # Add a button to switch to history view if no pending requests
-        if st.button("Ver Historial de Solicitudes", key="pending_to_history_button"):
-            st.session_state.view_mode = 'history_view'
-            st.rerun()
     else:
         st.subheader(f"Total Pendientes: {len(pending_requests)}")
         
@@ -320,96 +318,7 @@ ShiftTradeAV"""
                                         st.rerun()
                 st.markdown("---")
 
-elif st.session_state.view_mode == 'history_view':
-    st.header("Historial de Todas las Solicitudes")
-
-    # Fetch all requests (not just pending) for history, cache in session state
-    if 'all_requests_for_history' not in st.session_state:
-        with st.spinner("Cargando historial de solicitudes..."):
-            st.session_state.all_requests_for_history = utils.get_all_shift_requests(PROJECT_ID)
-    
-    all_requests_for_history = st.session_state.all_requests_for_history
-
-    if not all_requests_for_history:
-        st.info("No hay historial de solicitudes disponible.")
-        # Add a button to switch to pending view if no history
-        if st.button("Ver Solicitudes Pendientes", key="history_to_pending_button"):
-            st.session_state.view_mode = 'pending_requests'
-            st.rerun()
-    else:
-        # Convertir la lista de solicitudes a DataFrame para facilitar manipulación
-        df_history = pd.DataFrame(all_requests_for_history)
-        
-        # Ordenar por fecha de vuelo (convertir a datetime para ordenamiento correcto)
-        try:
-            # Convertir fecha_request a datetime para ordenar correctamente
-            df_history['date_request_dt'] = pd.to_datetime(df_history['date_request'], errors='coerce')
-            # Ordenar por fecha ascendente (más cercanas primero)
-            df_history = df_history.sort_values(by='date_request_dt').reset_index(drop=True)
-            # Eliminar columna auxiliar usada para ordenar
-            df_history = df_history.drop('date_request_dt', axis=1)
-        except Exception as e:
-            st.warning(f"No se pudo ordenar el historial por fecha: {e}")
-        
-        columns_to_display = [
-            'id', 'date_request', 'flight_number', 'requester_name', 
-            'cover_name', 'supervisor_status', 'supervisor_name', 
-            'supervisor_decision_date', 'supervisor_comments'
-        ]
-        existing_columns_in_df = [col for col in columns_to_display if col in df_history.columns]
-        
-        df_display_full = df_history[existing_columns_in_df].copy()
-
-        # Convert relevant date columns to datetime objects and format with day name
-        if 'date_request' in df_display_full.columns: # Assuming this is the original shift date
-            # Usar la función personalizada de formateo para todas las fechas
-            df_display_full['date_request'] = df_display_full['date_request'].apply(utils.format_date)
-        if 'supervisor_decision_date' in df_display_full.columns:
-            df_display_full['supervisor_decision_date'] = df_display_full['supervisor_decision_date'].apply(utils.format_date)
-
-        rename_map = {
-            'id': 'ID',
-            'date_request': 'Fecha Vuelo Orig.',
-            'flight_number': 'Vuelo',
-            'requester_name': 'Solicitante',
-            'cover_name': 'Cubridor',
-            'supervisor_status': 'Estado Sup.',
-            'supervisor_name': 'Supervisor',
-            'supervisor_decision_date': 'Fecha Decisión Sup.',
-            'supervisor_comments': 'Comentarios Sup.'
-        }
-        df_display_filtered = df_display_full.rename(columns={k: v for k, v in rename_map.items() if k in df_display_full.columns})
-        
-        # Ensure the order of columns after renaming
-        ordered_renamed_columns = [rename_map[col] for col in existing_columns_in_df if col in rename_map and rename_map[col] in df_display_filtered.columns]
-        df_display_filtered = df_display_filtered[ordered_renamed_columns]
-
-
-        st.markdown("### Filtrar Historial")
-        filter_cols = st.columns(3)
-        
-        with filter_cols[0]:
-            if 'Solicitante' in df_display_filtered.columns:
-                requester_names = sorted(df_display_filtered['Solicitante'].dropna().unique().tolist())
-                selected_requester = st.selectbox("Por Solicitante", ["Todos"] + requester_names, key="hist_requester_filter_main")
-                if selected_requester != "Todos":
-                    df_display_filtered = df_display_filtered[df_display_filtered['Solicitante'] == selected_requester]
-        
-        with filter_cols[1]:
-            if 'Cubridor' in df_display_filtered.columns:
-                cover_names = sorted(df_display_filtered['Cubridor'].dropna().unique().tolist())
-                selected_cover = st.selectbox("Por Cubridor", ["Todos"] + cover_names, key="hist_cover_filter_main")
-                if selected_cover != "Todos":
-                    df_display_filtered = df_display_filtered[df_display_filtered['Cubridor'] == selected_cover]
-
-        with filter_cols[2]:
-            if 'Estado Sup.' in df_display_filtered.columns:
-                status_options = sorted(df_display_filtered['Estado Sup.'].dropna().unique().tolist())
-                selected_status = st.selectbox("Por Estado Sup.", ["Todos"] + status_options, key="hist_status_filter_main")
-                if selected_status != "Todos":
-                    df_display_filtered = df_display_filtered[df_display_filtered['Estado Sup.'] == selected_status]
-        
-        st.dataframe(df_display_filtered, use_container_width=True)
+# Removed the 'history_view' block and related logic
 
 st.markdown("---")
 st.caption("ShiftTradeAV - Panel del Supervisor")

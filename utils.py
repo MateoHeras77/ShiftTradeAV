@@ -557,11 +557,17 @@ def create_calendar_file(shift_data, is_for_requester=True):
         if 'AV255' in flight_info:
             start_time = "05:00"
             end_time = "10:00"
+        elif 'AV619' in flight_info: # NUEVO VUELO
+            start_time = "04:00"
+            end_time = "09:00"
         elif 'AV627' in flight_info:
             start_time = "13:00"
             end_time = "17:30"
         elif 'AV205' in flight_info:
             start_time = "20:00"
+            end_time = "23:59"
+        elif 'AV625' in flight_info: # NUEVO VUELO
+            start_time = "22:00"
             end_time = "23:59"
         else:
             start_time = "09:00"  # Default

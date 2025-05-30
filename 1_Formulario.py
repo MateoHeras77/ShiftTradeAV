@@ -56,8 +56,10 @@ date_request_input = st.date_input("Fecha del turno a Cambiar", value=datetime.t
 flight_options = [
     "Seleccionar vuelo...",
     "AV255 (5:00-10:00)",
+    "AV619 (04:00-09:00)", # NUEVO VUELO
     "AV627 (13:00-17:30)", 
-    "AV205 (20:00-23:59)"
+    "AV205 (20:00-23:59)",
+    "AV625 (22:00-23:59)"  # NUEVO VUELO
 ]
 
 selected_flight = st.selectbox("Número de Vuelo", flight_options)

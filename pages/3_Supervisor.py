@@ -51,39 +51,39 @@ st.sidebar.markdown("---")
 st.header("Solicitudes Pendientes de Aprobación")
 # 1. Display a list of all requests with `supervisor_status = 'pending'`
 if 'pending_requests_data' not in st.session_state:
-        with st.spinner("Cargando solicitudes pendientes..."):
-            st.session_state.pending_requests_data = utils.get_pending_requests(PROJECT_ID)
+    with st.spinner("Cargando solicitudes pendientes..."):
+        st.session_state.pending_requests_data = utils.get_pending_requests(PROJECT_ID)
+
+pending_requests = st.session_state.pending_requests_data
+
+if not pending_requests:
+    st.info("No hay solicitudes de cambio de turno pendientes de aprobación.")
+else:
+    st.subheader(f"Total Pendientes: {len(pending_requests)}")
     
-    pending_requests = st.session_state.pending_requests_data
-
-    if not pending_requests:
-        st.info("No hay solicitudes de cambio de turno pendientes de aprobación.")
-    else:
-        st.subheader(f"Total Pendientes: {len(pending_requests)}")
-        
-        # Ordenar solicitudes por fecha (más cercanas primero)
-        try:
-            # Convertir las fechas de string a objetos datetime para ordenarlas correctamente
-            for req in pending_requests:
-                if 'date_request' in req:
-                    # Intentar convertir a objeto datetime, si ya es un string ISO
-                    try:
-                        req['date_request_obj'] = datetime.fromisoformat(req['date_request'].replace('Z', '+00:00'))
-                    except (ValueError, AttributeError):
-                        # Si hay un error, asignar fecha lejana para que aparezca al final
-                        req['date_request_obj'] = datetime(2099, 1, 1)
-                else:
-                    req['date_request_obj'] = datetime(2099, 1, 1)  # Fecha lejana por defecto
-            
-            # Ordenar la lista por la fecha (más cercanas primero)
-            pending_requests = sorted(pending_requests, key=lambda x: x['date_request_obj'])
-        except Exception as e:
-            st.warning(f"No se pudieron ordenar las solicitudes por fecha: {e}")
-
+    # Ordenar solicitudes por fecha (más cercanas primero)
+    try:
+        # Convertir las fechas de string a objetos datetime para ordenarlas correctamente
         for req in pending_requests:
-            req_id = req.get('id')
-            formatted_date = utils.format_date(req.get('date_request', 'N/A'))
-            with st.expander(f"Fecha: {formatted_date} - Vuelo: {req.get('flight_number', 'N/A')} - Solicitante: {req.get('requester_name', 'N/A')}"):
+            if 'date_request' in req:
+                # Intentar convertir a objeto datetime, si ya es un string ISO
+                try:
+                    req['date_request_obj'] = datetime.fromisoformat(req['date_request'].replace('Z', '+00:00'))
+                except (ValueError, AttributeError):
+                    # Si hay un error, asignar fecha lejana para que aparezca al final
+                    req['date_request_obj'] = datetime(2099, 1, 1)
+            else:
+                req['date_request_obj'] = datetime(2099, 1, 1)  # Fecha lejana por defecto
+        
+        # Ordenar la lista por la fecha (más cercanas primero)
+        pending_requests = sorted(pending_requests, key=lambda x: x['date_request_obj'])
+    except Exception as e:
+        st.warning(f"No se pudieron ordenar las solicitudes por fecha: {e}")
+
+    for req in pending_requests:
+        req_id = req.get('id')
+        formatted_date = utils.format_date(req.get('date_request', 'N/A'))
+        with st.expander(f"Fecha: {formatted_date} - Vuelo: {req.get('flight_number', 'N/A')} - Solicitante: {req.get('requester_name', 'N/A')}"):
                 # Verificar si el cubridor ha aceptado la solicitud
                 has_cover_accepted = req.get('date_accepted_by_cover') is not None and req.get('date_accepted_by_cover') != 'N/A'
                 

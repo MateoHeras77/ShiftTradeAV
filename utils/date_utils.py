@@ -7,13 +7,20 @@ import locale
 import pytz
 from datetime import datetime, date
 
-def format_date(date_str):
+# Definición de los días de la semana en español para evitar problemas de locale
+DIAS_SEMANA_ES = [
+    'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'
+]
+
+def format_date(date_input):
     """
-    Convierte una cadena de fecha ISO 8601 a formato 'año-mes-día (Nombre del día)' 
-    con ajuste a zona horaria de Toronto (EST/EDT)
+    Convierte una cadena de fecha ISO, un objeto datetime o un objeto date
+    a un formato legible en español y ajustado a la zona horaria de Toronto.
+    - Datetime (o string con hora): 'YYYY-MM-DD (Día) HH:MM (hora Toronto)'
+    - Date (o string YYYY-MM-DD): 'YYYY-MM-DD (Día)'
     """
     try:
-        # Intentar configurar el locale a español
+        # Intento de configurar el locale a español (mejor esfuerzo, el mapeo manual es el principal)
         try:
             locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
         except locale.Error:
@@ -21,64 +28,78 @@ def format_date(date_str):
                 locale.setlocale(locale.LC_TIME, 'es_ES')
             except locale.Error:
                 try:
-                    # Fallback a español genérico
                     locale.setlocale(locale.LC_TIME, 'es')
                 except locale.Error:
-                    # Si no hay locales en español, usar el predeterminado
-                    pass
+                    pass  # Usar el mapeo manual si el locale falla
+
+        toronto_tz = pytz.timezone('America/Toronto')
         
-        # Convertir la cadena a un objeto datetime
-        if isinstance(date_str, str):
-            # Para gestionar cadenas ISO 8601 (GMT/UTC)
-            dt_utc = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-            # Convertir de UTC a zona horaria de Toronto (America/Toronto)
-            toronto_tz = pytz.timezone('America/Toronto')
-            dt = dt_utc.replace(tzinfo=pytz.UTC).astimezone(toronto_tz)
-            # Agregar indicador de zona horaria
-            time_suffix = ""
-            if isinstance(dt, datetime) and dt.hour > 0:
-                time_suffix = f" {dt.strftime('%H:%M')} (hora Toronto)"
-        elif isinstance(date_str, (datetime, date)):
-            # Si ya es un objeto datetime o date
-            dt = date_str
-            time_suffix = ""
-        else:
-            return str(date_str)  # Devolver la cadena original si no se puede convertir
-          
-        # Formatear la fecha con el día de la semana (con nombres en español)
-        if isinstance(dt, datetime):
-            # Formato: Año-mes-día (Día de la semana) Hora:Minuto (hora Toronto)
-            fecha_formateada = dt.strftime('%Y-%m-%d')
-            # Obtener el día de la semana en español
-            dias_semana = {
-                'Monday': 'Lunes',
-                'Tuesday': 'Martes',
-                'Wednesday': 'Miércoles',
-                'Thursday': 'Jueves',
-                'Friday': 'Viernes',
-                'Saturday': 'Sábado',
-                'Sunday': 'Domingo'
-            }
-            dia_semana = dias_semana.get(dt.strftime('%A'), dt.strftime('%A'))
-            return f"{fecha_formateada} ({dia_semana}){time_suffix}"
-        else:
-            # Si es un objeto date
-            fecha_formateada = dt.strftime('%Y-%m-%d')
-            dias_semana = {
-                'Monday': 'Lunes',
-                'Tuesday': 'Martes',
-                'Wednesday': 'Miércoles',
-                'Thursday': 'Jueves',
-                'Friday': 'Viernes',
-                'Saturday': 'Sábado',
-                'Sunday': 'Domingo'
-            }
-            dia_semana = dias_semana.get(dt.strftime('%A'), dt.strftime('%A'))
-            return f"{fecha_formateada} ({dia_semana})"
+        processed_dt = None # This will hold the datetime object for formatting time
+        processed_date = None # This will hold the date object for formatting date-only
+
+        if isinstance(date_input, str):
+            original_date_input_str = date_input # for error messages
+            try:
+                # Prioritize parsing as "YYYY-MM-DD" if it matches that length
+                if len(date_input) == 10:
+                    dt_naive = datetime.strptime(date_input, '%Y-%m-%d')
+                    processed_date = dt_naive.date()
+                else: # Attempt to parse as full ISO datetime
+                    # Handle 'Z' for UTC explicitly for fromisoformat
+                    if date_input.endswith('Z'):
+                        date_input = date_input[:-1] + '+00:00'
+                    
+                    dt_utc_aware = datetime.fromisoformat(date_input)
+                    # Convert to Toronto time
+                    processed_dt = dt_utc_aware.astimezone(toronto_tz)
+
+            except ValueError:
+                # If primary parsing failed, try the other way around or log error
+                if processed_date is None and processed_dt is None: # Neither YYYY-MM-DD nor full ISO worked
+                    try: # Last attempt for YYYY-MM-DD if it wasn't 10 chars but still valid
+                        dt_naive = datetime.strptime(original_date_input_str, '%Y-%m-%d')
+                        processed_date = dt_naive.date()
+                    except ValueError:
+                        print(f"Error al parsear la cadena de fecha: '{original_date_input_str}'")
+                        return str(original_date_input_str) # Return original on error
+        
+        elif isinstance(date_input, datetime):
+            dt_to_convert = date_input
+            if dt_to_convert.tzinfo is None or dt_to_convert.tzinfo.utcoffset(dt_to_convert) is None:
+                # Asumir UTC si es naive, luego convertir a Toronto
+                processed_dt = pytz.utc.localize(dt_to_convert).astimezone(toronto_tz)
+            else:
+                # Si ya tiene zona horaria, convertir a Toronto
+                processed_dt = dt_to_convert.astimezone(toronto_tz)
+
+        elif isinstance(date_input, date):
+            # Es un objeto date puro, no datetime
+            processed_date = date_input
             
-    except (ValueError, TypeError) as e:
-        print(f"Error al formatear la fecha {date_str}: {e}")
-        return str(date_str)  # Devolver la cadena original en caso de error
+        else:
+            return str(date_input) # Tipo no soportado
+
+        # Formateo final
+        if processed_dt: # Implica que es un datetime y debe tener hora
+            fecha_formateada_str = processed_dt.strftime('%Y-%m-%d')
+            dia_semana_str = DIAS_SEMANA_ES[processed_dt.weekday()]
+            hora_str = processed_dt.strftime('%H:%M')
+            return f"{fecha_formateada_str} ({dia_semana_str}) {hora_str} (hora Toronto)"
+        
+        elif processed_date: # Implica que es solo una fecha
+            # Para obtener el día de la semana, podemos convertir temporalmente a datetime (medianoche)
+            # No se necesita conversión de zona horaria para un 'date' puro en este contexto de formateo.
+            temp_dt_for_weekday = datetime(processed_date.year, processed_date.month, processed_date.day)
+            fecha_formateada_str = processed_date.strftime('%Y-%m-%d')
+            dia_semana_str = DIAS_SEMANA_ES[temp_dt_for_weekday.weekday()]
+            return f"{fecha_formateada_str} ({dia_semana_str})"
+        
+        else: # No se pudo procesar
+             return str(date_input)
+
+    except Exception as e: # Captura errores inesperados durante el formateo
+        print(f"Error general al formatear la fecha '{date_input}': {e}")
+        return str(date_input) # Devolver la cadena original en caso de error grave
 
 def convert_to_toronto_timezone(dt):
     """

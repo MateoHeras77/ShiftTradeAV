@@ -185,9 +185,9 @@ if submit_button:
 {requester_name} ha solicitado que cubras su turno para el vuelo {flight_number} el {date_utils.format_date(date_request_input)}.
 
 **Detalles de la solicitud:**
-• Fecha de solicitud: {fecha_solicitud}
+• Fecha de solicitud: {date_utils.format_date(now_toronto)}
 • Vuelo: {flight_number}
-• Fecha del turno: {date_utils.format_date(date_request_input)} (hora de Toronto)
+• Fecha del turno: {date_utils.format_date(date_request_input)}
 • Solicitante: {requester_name}
 
 Para aceptar, por favor haz clic en el siguiente enlace (válido por 24 horas):

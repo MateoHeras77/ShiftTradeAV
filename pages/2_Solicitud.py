@@ -78,7 +78,10 @@ if st.button("✅ Aceptar Cambio de Turno"):
         #    Mark token as `used`
         progress_bar = st.progress(0)
         st.caption("Actualizando estado de la solicitud...")
-        now_utc = datetime.utcnow()
+        # Obtener la hora actual de Toronto y convertir a UTC para guardar correctamente
+        toronto_tz = pytz.timezone('America/Toronto')
+        now_toronto = datetime.now(toronto_tz)
+        now_utc = now_toronto.astimezone(pytz.UTC)
         update_success = shift_request.update_shift_request_status(
             shift_request_id,
             {
@@ -104,16 +107,16 @@ if st.button("✅ Aceptar Cambio de Turno"):
                 cover_name = updated_request_details.get('cover_name')
                 flight_number = updated_request_details.get('flight_number')
                 date_request = updated_request_details.get('date_request')
-
+                # Usar la fecha real guardada en la base de datos para la aceptación
+                date_accepted_by_cover = updated_request_details.get('date_accepted_by_cover')
+                if date_accepted_by_cover:
+                    fecha_aceptacion = date_utils.format_date(date_accepted_by_cover)
+                else:
+                    fecha_aceptacion = "N/A"
                 # 3. Send confirmation emails
                 st.caption("Enviando correos de confirmación...")
                 confirmation_subject = "Confirmación de Cambio de Turno Aceptado"
                 emails_sent = True
-                # Get current date for acceptance (Toronto timezone)
-                toronto_tz = pytz.timezone('America/Toronto')
-                now_toronto = datetime.now(toronto_tz)
-                fecha_aceptacion = now_toronto.strftime("%d/%m/%Y")
-                
                 # Email to requester
                 if requester_email:
                     requester_body = f"""Hola {requester_name},

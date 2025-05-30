@@ -142,8 +142,16 @@ else:
                                         now_toronto = datetime.now(toronto_tz)
                                         fecha_aprobacion = now_toronto.strftime("%d/%m/%Y")
                                         fecha_vuelo = date_utils.format_date(req.get('date_request'))
-                                        fecha_aceptacion = date_utils.format_date(req.get('date_accepted_by_cover')) if req.get('date_accepted_by_cover') else "N/A"
                                         
+                                        # Obtener la fecha real de aceptación y mostrarla con hora Toronto
+                                        date_accepted_by_cover = req.get('date_accepted_by_cover')
+                                        if date_accepted_by_cover:
+                                            dt_utc = datetime.fromisoformat(date_accepted_by_cover.replace('Z', '+00:00'))
+                                            toronto_tz = pytz.timezone('America/Toronto')
+                                            dt_toronto = dt_utc.astimezone(toronto_tz)
+                                            fecha_aceptacion = dt_toronto.strftime('%d/%m/%Y %H:%M (hora Toronto)')
+                                        else:
+                                            fecha_aceptacion = "N/A"
                                         # Email to requester
                                         requester_subject = "✅ Cambio de Turno APROBADO"
                                         requester_body = f"""Hola {req.get('requester_name')},
@@ -251,10 +259,25 @@ ShiftTradeAV"""
                                           # Get formatted dates for the emails (en zona horaria de Toronto)
                                         toronto_tz = pytz.timezone('America/Toronto')
                                         now_toronto = datetime.now(toronto_tz)
-                                        fecha_rechazo = now_toronto.strftime("%d/%m/%Y")
+                                        # Formato: 2025-05-29 (jueves) 23:18 (hora Toronto)
+                                        dia_semana_rechazo = now_toronto.strftime('%A')
+                                        dias_es = {
+                                            'Monday': 'lunes', 'Tuesday': 'martes', 'Wednesday': 'miércoles', 'Thursday': 'jueves',
+                                            'Friday': 'viernes', 'Saturday': 'sábado', 'Sunday': 'domingo'
+                                        }
+                                        dia_semana_rechazo_es = dias_es.get(dia_semana_rechazo, dia_semana_rechazo).capitalize()
+                                        fecha_rechazo = now_toronto.strftime(f'%Y-%m-%d ({dia_semana_rechazo_es}) %H:%M (hora Toronto)')
                                         fecha_vuelo = date_utils.format_date(req.get('date_request'))
-                                        fecha_aceptacion = date_utils.format_date(req.get('date_accepted_by_cover')) if req.get('date_accepted_by_cover') else "N/A"
-                                        
+                                        # Obtener la fecha real de aceptación y mostrarla con hora Toronto y día en español
+                                        date_accepted_by_cover = req.get('date_accepted_by_cover')
+                                        if date_accepted_by_cover:
+                                            dt_utc = datetime.fromisoformat(date_accepted_by_cover.replace('Z', '+00:00'))
+                                            dt_toronto = dt_utc.astimezone(toronto_tz)
+                                            dia_semana_aceptacion = dt_toronto.strftime('%A')
+                                            dia_semana_aceptacion_es = dias_es.get(dia_semana_aceptacion, dia_semana_aceptacion).capitalize()
+                                            fecha_aceptacion = dt_toronto.strftime(f'%Y-%m-%d ({dia_semana_aceptacion_es}) %H:%M (hora Toronto)')
+                                        else:
+                                            fecha_aceptacion = "N/A"
                                         # Email to requester
                                         requester_subject = "❌ Cambio de Turno RECHAZADO"
                                         requester_body = f"""Hola {req.get('requester_name')},

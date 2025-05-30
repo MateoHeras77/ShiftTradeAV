@@ -140,66 +140,67 @@ else:
                                           # Get formatted dates for the emails (en zona horaria de Toronto)
                                         toronto_tz = pytz.timezone('America/Toronto')
                                         now_toronto = datetime.now(toronto_tz)
-                                        fecha_aprobacion = now_toronto.strftime("%d/%m/%Y")
-                                        fecha_vuelo = date_utils.format_date(req.get('date_request'))
                                         
-                                        # Obtener la fecha real de aceptación y mostrarla con hora Toronto
-                                        date_accepted_by_cover = req.get('date_accepted_by_cover')
-                                        if date_accepted_by_cover:
-                                            dt_utc = datetime.fromisoformat(date_accepted_by_cover.replace('Z', '+00:00'))
-                                            toronto_tz = pytz.timezone('America/Toronto')
-                                            dt_toronto = dt_utc.astimezone(toronto_tz)
-                                            fecha_aceptacion = dt_toronto.strftime('%d/%m/%Y %H:%M (hora Toronto)')
-                                        else:
-                                            fecha_aceptacion = "N/A"
+                                        # Format supervisor's decision date
+                                        fecha_aprobacion_email = date_utils.format_date(now_toronto)
+
+                                        # Format flight date with specific time
+                                        original_date_request = req.get('date_request')
+                                        flight_number = req.get('flight_number')
+                                        flight_specific_dt = date_utils.get_flight_specific_datetime(original_date_request, flight_number)
+                                        fecha_vuelo_email = date_utils.format_date(flight_specific_dt)
+                                        
+                                        # Format cover acceptance date
+                                        fecha_aceptacion_email = date_utils.format_date(req.get('date_accepted_by_cover'))
+                                        
                                         # Email to requester
                                         requester_subject = "✅ Cambio de Turno APROBADO"
-                                        requester_body = f"""Hola {req.get('requester_name')},
-
-¡Excelentes noticias! Tu solicitud de cambio de turno ha sido APROBADA.
-
-**Detalles del cambio aprobado:**
-• Vuelo: {req.get('flight_number')}
-• Fecha del turno: {fecha_vuelo}
-• Compañero que cubre: {req.get('cover_name')}
-• Supervisor que aprobó: {supervisor_name_input}
-• Fecha de aprobación: {fecha_aprobacion}
-
-**Cronología:**
-1. Solicitud enviada ✅
-2. Aceptado por {req.get('cover_name')} el {fecha_aceptacion} ✅
-3. Aprobado por supervisor el {fecha_aprobacion} ✅
-
-**Comentarios del supervisor:** {supervisor_comments if supervisor_comments else "Sin comentarios adicionales"}
-
-El cambio de turno está oficialmente autorizado.
-
-Saludos,
+                                        requester_body = f"""Hola {req.get('requester_name')},\r
+\r
+¡Excelentes noticias! Tu solicitud de cambio de turno ha sido APROBADA.\r
+\r
+**Detalles del cambio aprobado:**\r
+• Vuelo: {req.get('flight_number')}\r
+• Fecha del turno: {fecha_vuelo_email}\r
+• Compañero que cubre: {req.get('cover_name')}\r
+• Supervisor que aprobó: {supervisor_name_input}\r
+• Fecha de aprobación: {fecha_aprobacion_email}\r
+\r
+**Cronología:**\r
+1. Solicitud enviada ✅\r
+2. Aceptado por {req.get('cover_name')} el {fecha_aceptacion_email} ✅\r
+3. Aprobado por supervisor el {fecha_aprobacion_email} ✅\r
+\r
+**Comentarios del supervisor:** {supervisor_comments if supervisor_comments else "Sin comentarios adicionales"}\r
+\r
+El cambio de turno está oficialmente autorizado.\r
+\r
+Saludos,\r
 ShiftTradeAV"""
 
                                         # Email to cover employee
                                         cover_subject = "✅ Cambio de Turno APROBADO"
-                                        cover_body = f"""Hola {req.get('cover_name')},
-
-El cambio de turno que aceptaste cubrir ha sido APROBADO por el supervisor.
-
-**Detalles del cambio aprobado:**
-• Vuelo: {req.get('flight_number')}
-• Fecha del turno: {fecha_vuelo}
-• Solicitante original: {req.get('requester_name')}
-• Supervisor que aprobó: {supervisor_name_input}
-• Fecha de aprobación: {fecha_aprobacion}
-
-**Cronología:**
-1. Solicitud enviada ✅
-2. Tú aceptaste el {fecha_aceptacion} ✅
-3. Aprobado por supervisor el {fecha_aprobacion} ✅
-
-**Comentarios del supervisor:** {supervisor_comments if supervisor_comments else "Sin comentarios adicionales"}
-
-Gracias por tu colaboración. El cambio está oficialmente autorizado.
-
-Saludos,
+                                        cover_body = f"""Hola {req.get('cover_name')},\r
+\r
+El cambio de turno que aceptaste cubrir ha sido APROBADO por el supervisor.\r
+\r
+**Detalles del cambio aprobado:**\r
+• Vuelo: {req.get('flight_number')}\r
+• Fecha del turno: {fecha_vuelo_email}\r
+• Solicitante original: {req.get('requester_name')}\r
+• Supervisor que aprobó: {supervisor_name_input}\r
+• Fecha de aprobación: {fecha_aprobacion_email}\r
+\r
+**Cronología:**\r
+1. Solicitud enviada ✅\r
+2. Tú aceptaste el {fecha_aceptacion_email} ✅\r
+3. Aprobado por supervisor el {fecha_aprobacion_email} ✅\r
+\r
+**Comentarios del supervisor:** {supervisor_comments if supervisor_comments else "Sin comentarios adicionales"}\r
+\r
+Gracias por tu colaboración. El cambio está oficialmente autorizado.\r
+\r
+Saludos,\r
 ShiftTradeAV"""
 
                                         # Send emails with calendar attachments
@@ -259,73 +260,67 @@ ShiftTradeAV"""
                                           # Get formatted dates for the emails (en zona horaria de Toronto)
                                         toronto_tz = pytz.timezone('America/Toronto')
                                         now_toronto = datetime.now(toronto_tz)
-                                        # Formato: 2025-05-29 (jueves) 23:18 (hora Toronto)
-                                        dia_semana_rechazo = now_toronto.strftime('%A')
-                                        dias_es = {
-                                            'Monday': 'lunes', 'Tuesday': 'martes', 'Wednesday': 'miércoles', 'Thursday': 'jueves',
-                                            'Friday': 'viernes', 'Saturday': 'sábado', 'Sunday': 'domingo'
-                                        }
-                                        dia_semana_rechazo_es = dias_es.get(dia_semana_rechazo, dia_semana_rechazo).capitalize()
-                                        fecha_rechazo = now_toronto.strftime(f'%Y-%m-%d ({dia_semana_rechazo_es}) %H:%M (hora Toronto)')
-                                        fecha_vuelo = date_utils.format_date(req.get('date_request'))
-                                        # Obtener la fecha real de aceptación y mostrarla con hora Toronto y día en español
-                                        date_accepted_by_cover = req.get('date_accepted_by_cover')
-                                        if date_accepted_by_cover:
-                                            dt_utc = datetime.fromisoformat(date_accepted_by_cover.replace('Z', '+00:00'))
-                                            dt_toronto = dt_utc.astimezone(toronto_tz)
-                                            dia_semana_aceptacion = dt_toronto.strftime('%A')
-                                            dia_semana_aceptacion_es = dias_es.get(dia_semana_aceptacion, dia_semana_aceptacion).capitalize()
-                                            fecha_aceptacion = dt_toronto.strftime(f'%Y-%m-%d ({dia_semana_aceptacion_es}) %H:%M (hora Toronto)')
-                                        else:
-                                            fecha_aceptacion = "N/A"
+
+                                        # Format supervisor's decision date
+                                        fecha_rechazo_email = date_utils.format_date(now_toronto)
+
+                                        # Format flight date with specific time
+                                        original_date_request = req.get('date_request')
+                                        flight_number = req.get('flight_number')
+                                        flight_specific_dt = date_utils.get_flight_specific_datetime(original_date_request, flight_number)
+                                        fecha_vuelo_email = date_utils.format_date(flight_specific_dt)
+
+                                        # Format cover acceptance date
+                                        fecha_aceptacion_email = date_utils.format_date(req.get('date_accepted_by_cover'))
+                                        
                                         # Email to requester
                                         requester_subject = "❌ Cambio de Turno RECHAZADO"
-                                        requester_body = f"""Hola {req.get('requester_name')},
-
-Lamentamos informarte que tu solicitud de cambio de turno ha sido RECHAZADA.
-
-**Detalles de la solicitud rechazada:**
-• Vuelo: {req.get('flight_number')}
-• Fecha del turno: {fecha_vuelo}
-• Compañero que había aceptado: {req.get('cover_name')}
-• Supervisor que rechazó: {supervisor_name_input}
-• Fecha de rechazo: {fecha_rechazo}
-
-**Cronología:**
-1. Solicitud enviada ✅
-2. Aceptado por {req.get('cover_name')} el {fecha_aceptacion} ✅
-3. Rechazado por supervisor el {fecha_rechazo} ❌
-
-**Motivo del rechazo:** {supervisor_comments}
-
-Puedes presentar una nueva solicitud si consideras que las circunstancias han cambiado.
-
-Saludos,
+                                        requester_body = f"""Hola {req.get('requester_name')},\r
+\r
+Lamentamos informarte que tu solicitud de cambio de turno ha sido RECHAZADA.\r
+\r
+**Detalles de la solicitud rechazada:**\r
+• Vuelo: {req.get('flight_number')}\r
+• Fecha del turno: {fecha_vuelo_email}\r
+• Compañero que había aceptado: {req.get('cover_name')}\r
+• Supervisor que rechazó: {supervisor_name_input}\r
+• Fecha de rechazo: {fecha_rechazo_email}\r
+\r
+**Cronología:**\r
+1. Solicitud enviada ✅\r
+2. Aceptado por {req.get('cover_name')} el {fecha_aceptacion_email} ✅\r
+3. Rechazado por supervisor el {fecha_rechazo_email} ❌\r
+\r
+**Motivo del rechazo:** {supervisor_comments}\r
+\r
+Puedes presentar una nueva solicitud si consideras que las circunstancias han cambiado.\r
+\r
+Saludos,\r
 ShiftTradeAV"""
 
                                         # Email to cover employee
                                         cover_subject = "❌ Cambio de Turno RECHAZADO"
-                                        cover_body = f"""Hola {req.get('cover_name')},
-
-Te informamos que el cambio de turno que habías aceptado cubrir ha sido RECHAZADO por el supervisor.
-
-**Detalles de la solicitud rechazada:**
-• Vuelo: {req.get('flight_number')}
-• Fecha del turno: {fecha_vuelo}
-• Solicitante original: {req.get('requester_name')}
-• Supervisor que rechazó: {supervisor_name_input}
-• Fecha de rechazo: {fecha_rechazo}
-
-**Cronología:**
-1. Solicitud enviada ✅
-2. Tú aceptaste el {fecha_aceptacion} ✅
-3. Rechazado por supervisor el {fecha_rechazo} ❌
-
-**Motivo del rechazo:** {supervisor_comments}
-
-Ya no necesitas cubrir este turno. Gracias por tu disposición.
-
-Saludos,
+                                        cover_body = f"""Hola {req.get('cover_name')},\r
+\r
+Te informamos que el cambio de turno que habías aceptado cubrir ha sido RECHAZADO por el supervisor.\r
+\r
+**Detalles de la solicitud rechazada:**\r
+• Vuelo: {req.get('flight_number')}\r
+• Fecha del turno: {fecha_vuelo_email}\r
+• Solicitante original: {req.get('requester_name')}\r
+• Supervisor que rechazó: {supervisor_name_input}\r
+• Fecha de rechazo: {fecha_rechazo_email}\r
+\r
+**Cronología:**\r
+1. Solicitud enviada ✅\r
+2. Tú aceptaste el {fecha_aceptacion_email} ✅\r
+3. Rechazado por supervisor el {fecha_rechazo_email} ❌\r
+\r
+**Motivo del rechazo:** {supervisor_comments}\r
+\r
+Ya no necesitas cubrir este turno. Gracias por tu disposición.\r
+\r
+Saludos,\r
 ShiftTradeAV"""
 
                                         email1 = email_utils.send_email(req.get('requester_email'), requester_subject, requester_body)

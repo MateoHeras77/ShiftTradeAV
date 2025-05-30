@@ -107,12 +107,17 @@ if st.button("✅ Aceptar Cambio de Turno"):
                 cover_name = updated_request_details.get('cover_name')
                 flight_number = updated_request_details.get('flight_number')
                 date_request = updated_request_details.get('date_request')
-                # Usar la fecha real guardada en la base de datos para la aceptación
-                date_accepted_by_cover = updated_request_details.get('date_accepted_by_cover')
-                if date_accepted_by_cover:
-                    fecha_aceptacion = date_utils.format_date(date_accepted_by_cover)
-                else:
-                    fecha_aceptacion = "N/A"
+                
+                # Usar la hora actual de Toronto para la fecha de aceptación en el correo
+                # Esto asegura que el formato del correo sea el deseado en este momento.
+                # Idealmente, date_accepted_by_cover_from_db debería ser un ISO string completo.
+                # date_accepted_by_cover_from_db = updated_request_details.get('date_accepted_by_cover') 
+                
+                # Obtener la hora actual de Toronto para mostrar en el correo.
+                # Esto se hace DESPUÉS de que la actualización a la BD fue exitosa.
+                current_toronto_time_for_email = date_utils.get_current_toronto_time()
+                fecha_aceptacion_email = date_utils.format_date(current_toronto_time_for_email)
+
                 # 3. Send confirmation emails
                 st.caption("Enviando correos de confirmación...")
                 confirmation_subject = "Confirmación de Cambio de Turno Aceptado"
@@ -124,7 +129,7 @@ if st.button("✅ Aceptar Cambio de Turno"):
 Buenas noticias. {cover_name} ha aceptado cubrir tu turno.
 
 **Detalles del cambio:**
-• Fecha de aceptación: {fecha_aceptacion}
+• Fecha de aceptación: {fecha_aceptacion_email}
 • Vuelo: {flight_number}
 • Fecha del turno: {date_utils.format_date(date_request)}
 • Compañero que cubre: {cover_name}
@@ -143,7 +148,7 @@ Saludos."""
 Has aceptado cubrir el turno de {requester_name}.
 
 **Detalles del cambio:**
-• Fecha de aceptación: {fecha_aceptacion}
+• Fecha de aceptación: {fecha_aceptacion_email}
 • Vuelo: {flight_number}
 • Fecha del turno: {date_utils.format_date(date_request)}
 • Solicitante: {requester_name}

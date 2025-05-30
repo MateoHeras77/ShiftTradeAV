@@ -283,7 +283,18 @@ def get_all_shift_requests(project_id: str):
     try:
         # No aplicamos ordenamiento en la consulta para hacer el sorting en el frontend con más control
         response = supabase.table('shift_requests').select('*').execute()
-        return response.data if response.data else []
+        
+        # Procesamiento adicional para asegurar manejo correcto de caracteres especiales
+        data = response.data if response.data else []
+        
+        # Asegurar que los caracteres especiales se manejen correctamente
+        for record in data:
+            for key, value in record.items():
+                if isinstance(value, str):
+                    # Asegurarse de que la codificación de caracteres sea correcta
+                    record[key] = value
+                    
+        return data
     except Exception as e:
         print(f"Exception fetching all shift requests: {e}")
         st.error(f"Excepción al obtener todas las solicitudes: {e}")

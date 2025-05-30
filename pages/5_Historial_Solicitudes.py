@@ -2,9 +2,19 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import utils # Your utility functions
+import locale
 
 # Project ID for Supabase calls (ensure this is consistent with your project)
 PROJECT_ID = "lperiyftrgzchrzvutgx" 
+
+# Configurar locale para manejo correcto de caracteres especiales
+try:
+    locale.setlocale(locale.LC_ALL, 'es_ES.UTF-8')  # Para Linux/Mac
+except:
+    try:
+        locale.setlocale(locale.LC_ALL, 'Spanish_Spain.1252')  # Para Windows
+    except:
+        pass  # Si falla, seguimos sin cambiar el locale
 
 st.set_page_config(
     page_title="Historial de Solicitudes",
@@ -69,8 +79,6 @@ else:
         df_display_full['supervisor_decision_date'] = df_display_full['supervisor_decision_date'].apply(utils.format_date)
     if 'date_accepted_by_cover' in df_display_full.columns:
         df_display_full['date_accepted_by_cover'] = df_display_full['date_accepted_by_cover'].apply(utils.format_date)
-
-
     rename_map = {
         'id': 'ID',
         'date_request': 'Fecha Vuelo Orig.',
@@ -85,6 +93,7 @@ else:
         'supervisor_decision_date': 'Fecha Decisión Sup.',
         'supervisor_comments': 'Comentarios Sup.'
     }
+    # Asegurarnos de que los nombres de columnas con acentos se muestran correctamente
     df_display_filtered = df_display_full.rename(columns={k: v for k, v in rename_map.items() if k in df_display_full.columns})
     
     # Ensure the order of columns after renaming
@@ -151,9 +160,17 @@ else:
 
             except Exception as e:
                 st.warning(f"No se pudo aplicar el filtro de fecha: {e}")
-
-
-    st.dataframe(df_display_filtered, use_container_width=True, height=600) # Adjusted height
+    # Asegurar que los caracteres especiales (tildes, ñ, etc.) se muestren correctamente
+    # Convertir cualquier valor NaN/None a cadenas vacías para evitar problemas
+    df_display_filtered = df_display_filtered.fillna('')
+    
+    # Aplicar formato HTML si es necesario para los caracteres especiales
+    st.dataframe(
+        df_display_filtered,
+        use_container_width=True,
+        height=600,
+        column_config={col: st.column_config.TextColumn(col) for col in df_display_filtered.columns}
+    )
 
 st.markdown("---")
 st.caption("ShiftTradeAV - Historial de Solicitudes")

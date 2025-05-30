@@ -1,8 +1,9 @@
 import streamlit as st
 from datetime import datetime
+import pytz
 
 try:
-    import utils # Your utility functions
+    from utils import auth, email_utils, date_utils, shift_request
 except st.errors.StreamlitSecretNotFoundError as e:
     st.error(
         "CRITICAL ERROR: Could not load application secrets required by 'utils.py'.\n"
@@ -37,7 +38,7 @@ if not token:
 
 with st.spinner("Validando token..."):
     # 1. Validate the token
-    shift_request_id = utils.verify_token(str(token), PROJECT_ID) # Ensure token is string
+    shift_request_id = auth.verify_token(str(token), PROJECT_ID) # Ensure token is string
 
 if not shift_request_id:
     st.error("El token es inválido, ha expirado o ya ha sido utilizado.")
@@ -45,15 +46,16 @@ if not shift_request_id:
     st.stop()
 
 st.info(f"Token válido. Estás a punto de aceptar cubrir un turno.")
+st.info("📋 Nota: Todas las fechas y horas se muestran en la zona horaria de Toronto (EST/EDT)")
 st.write(f"ID de la solicitud de cambio: {shift_request_id}") # For debugging or info
 
 # Fetch shift request details to show some info (optional but good UX)
 with st.spinner("Cargando detalles del turno..."):
-    request_details = utils.get_shift_request_details(shift_request_id, PROJECT_ID)
+    request_details = shift_request.get_shift_request_details(shift_request_id, PROJECT_ID)
 if request_details:
     st.markdown(f"""
     **Detalles del Turno a Cubrir:**
-    - **Fecha del Turno a Cambiar:** {utils.format_date(request_details.get('date_request', 'N/A'))}
+    - **Fecha del Turno a Cambiar:** {date_utils.format_date(request_details.get('date_request', 'N/A'))}
     - **Vuelo:** {request_details.get('flight_number', 'N/A')}
     
     **Información del Solicitante:**
@@ -77,7 +79,7 @@ if st.button("✅ Aceptar Cambio de Turno"):
         progress_bar = st.progress(0)
         st.caption("Actualizando estado de la solicitud...")
         now_utc = datetime.utcnow()
-        update_success = utils.update_shift_request_status(
+        update_success = shift_request.update_shift_request_status(
             shift_request_id,
             {
                 "date_accepted_by_cover": now_utc.isoformat()
@@ -85,15 +87,14 @@ if st.button("✅ Aceptar Cambio de Turno"):
             PROJECT_ID
         )
         progress_bar.progress(33)
-        
         st.caption("Marcando token como utilizado...")
-        token_marked = utils.mark_token_as_used(str(token), PROJECT_ID)
+        token_marked = auth.mark_token_as_used(str(token), PROJECT_ID)
         progress_bar.progress(50)
 
         if update_success and token_marked:
             # Re-fetch details to get emails for confirmation
             st.caption("Preparando correos de confirmación...")
-            updated_request_details = utils.get_shift_request_details(shift_request_id, PROJECT_ID)
+            updated_request_details = shift_request.get_shift_request_details(shift_request_id, PROJECT_ID)
             progress_bar.progress(66)
             
             if updated_request_details:
@@ -108,9 +109,10 @@ if st.button("✅ Aceptar Cambio de Turno"):
                 st.caption("Enviando correos de confirmación...")
                 confirmation_subject = "Confirmación de Cambio de Turno Aceptado"
                 emails_sent = True
-                
-                # Get current date for acceptance
-                fecha_aceptacion = datetime.now().strftime("%d/%m/%Y")
+                # Get current date for acceptance (Toronto timezone)
+                toronto_tz = pytz.timezone('America/Toronto')
+                now_toronto = datetime.now(toronto_tz)
+                fecha_aceptacion = now_toronto.strftime("%d/%m/%Y")
                 
                 # Email to requester
                 if requester_email:
@@ -121,13 +123,13 @@ Buenas noticias. {cover_name} ha aceptado cubrir tu turno.
 **Detalles del cambio:**
 • Fecha de aceptación: {fecha_aceptacion}
 • Vuelo: {flight_number}
-• Fecha del turno: {utils.format_date(date_request)}
+• Fecha del turno: {date_utils.format_date(date_request)}
 • Compañero que cubre: {cover_name}
 
 La solicitud está ahora pendiente de aprobación por el supervisor.
 
 Saludos."""
-                    if not utils.send_email(requester_email, confirmation_subject, requester_body):
+                    if not email_utils.send_email(requester_email, confirmation_subject, requester_body):
                         emails_sent = False
                 progress_bar.progress(83)
 
@@ -140,13 +142,13 @@ Has aceptado cubrir el turno de {requester_name}.
 **Detalles del cambio:**
 • Fecha de aceptación: {fecha_aceptacion}
 • Vuelo: {flight_number}
-• Fecha del turno: {utils.format_date(date_request)}
+• Fecha del turno: {date_utils.format_date(date_request)}
 • Solicitante: {requester_name}
 
 La solicitud está ahora pendiente de aprobación por el supervisor.
 
 Gracias por tu colaboración."""
-                    if not utils.send_email(cover_email, confirmation_subject, cover_body):
+                    if not email_utils.send_email(cover_email, confirmation_subject, cover_body):
                         emails_sent = False
                 progress_bar.progress(100)
 

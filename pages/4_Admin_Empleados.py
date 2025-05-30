@@ -1,6 +1,6 @@
 import streamlit as st
 import re
-import utils
+from utils import employee, date_utils
 
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx"
@@ -47,16 +47,16 @@ if not st.session_state.admin_authenticated:
 
 # Load employees data
 if 'employees_data' not in st.session_state:
-    st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
+    st.session_state.employees_data = employee.get_all_employees(PROJECT_ID)
 if 'inactive_employees_data' not in st.session_state:
-    st.session_state.inactive_employees_data = utils.get_inactive_employees(PROJECT_ID)
+    st.session_state.inactive_employees_data = employee.get_inactive_employees(PROJECT_ID)
 
 # Refresh employees data
 col1, col2 = st.columns([3, 1])
 with col2:
     if st.button("🔄 Actualizar Lista"):
-        st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
-        st.session_state.inactive_employees_data = utils.get_inactive_employees(PROJECT_ID)
+        st.session_state.employees_data = employee.get_all_employees(PROJECT_ID)
+        st.session_state.inactive_employees_data = employee.get_inactive_employees(PROJECT_ID)
         st.rerun()
 
 employees = st.session_state.employees_data
@@ -82,9 +82,9 @@ with tab1:
                 with col3:
                     st.write(f"**Email:** {emp['email']}")
                 
-                st.write(f"**Creado:** {utils.format_date(emp['created_at'])}")
+                st.write(f"**Creado:** {date_utils.format_date(emp['created_at'])}")
                 if emp['updated_at'] != emp['created_at']:
-                    st.write(f"**Actualizado:** {utils.format_date(emp['updated_at'])}")
+                    st.write(f"**Actualizado:** {date_utils.format_date(emp['updated_at'])}")
     else:
         st.info("No hay empleados registrados en el sistema.")
 
@@ -108,17 +108,17 @@ with tab2:
                 st.error("Por favor, completa todos los campos.")
             elif not validate_email(new_email):
                 st.error("❌ El email no tiene un formato válido.")
-            elif utils.check_employee_exists(full_name=new_name, project_id=PROJECT_ID):
+            elif employee.check_employee_exists(full_name=new_name, project_id=PROJECT_ID):
                 st.error("❌ Ya existe un empleado con ese nombre.")
-            elif utils.check_employee_exists(email=new_email, project_id=PROJECT_ID):
+            elif employee.check_employee_exists(email=new_email, project_id=PROJECT_ID):
                 st.error("❌ Ya existe un empleado con ese email.")
             else:
                 with st.spinner("Agregando empleado..."):
-                    success = utils.add_employee(new_name, new_raic, new_email, PROJECT_ID)
+                    success = employee.add_employee(new_name, new_raic, new_email, PROJECT_ID)
                     if success:
                         st.success(f"✅ Empleado {new_name} agregado exitosamente.")
-                        st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
-                        st.session_state.inactive_employees_data = utils.get_inactive_employees(PROJECT_ID)
+                        st.session_state.employees_data = employee.get_all_employees(PROJECT_ID)
+                        st.session_state.inactive_employees_data = employee.get_inactive_employees(PROJECT_ID)
                         st.rerun()
                     else:
                         st.error("❌ Error al agregar el empleado.")
@@ -168,17 +168,17 @@ with tab3:
                         st.error("Por favor, completa todos los campos.")
                     elif not validate_email(edit_email):
                         st.error("❌ El email no tiene un formato válido.")
-                    elif edit_name != selected_employee['full_name'] and utils.check_employee_exists(full_name=edit_name, project_id=PROJECT_ID):
+                    elif edit_name != selected_employee['full_name'] and employee.check_employee_exists(full_name=edit_name, project_id=PROJECT_ID):
                         st.error("❌ Ya existe un empleado con ese nombre.")
-                    elif edit_email != selected_employee['email'] and utils.check_employee_exists(email=edit_email, project_id=PROJECT_ID):
+                    elif edit_email != selected_employee['email'] and employee.check_employee_exists(email=edit_email, project_id=PROJECT_ID):
                         st.error("❌ Ya existe un empleado con ese email.")
                     else:
                         with st.spinner("Actualizando empleado..."):
-                            success = utils.update_employee(selected_employee['id'], edit_name, edit_raic, edit_email, PROJECT_ID)
+                            success = employee.update_employee(selected_employee['id'], edit_name, edit_raic, edit_email, PROJECT_ID)
                             if success:
                                 st.success(f"✅ Empleado {edit_name} actualizado exitosamente.")
-                                st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
-                                st.session_state.inactive_employees_data = utils.get_inactive_employees(PROJECT_ID)
+                                st.session_state.employees_data = employee.get_all_employees(PROJECT_ID)
+                                st.session_state.inactive_employees_data = employee.get_inactive_employees(PROJECT_ID)
                                 st.rerun()
                             else:
                                 st.error("❌ Error al actualizar el empleado.")
@@ -198,11 +198,11 @@ with tab3:
                     with col_confirm:
                         if st.button("✅ Confirmar Desactivación", type="primary"):
                             with st.spinner("Desactivando empleado..."):
-                                success = utils.deactivate_employee(st.session_state.employee_to_deactivate['id'], PROJECT_ID)
+                                success = employee.deactivate_employee(st.session_state.employee_to_deactivate['id'], PROJECT_ID)
                                 if success:
                                     st.success(f"✅ Empleado {st.session_state.employee_to_deactivate['full_name']} desactivado exitosamente.")
-                                    st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
-                                    st.session_state.inactive_employees_data = utils.get_inactive_employees(PROJECT_ID)
+                                    st.session_state.employees_data = employee.get_all_employees(PROJECT_ID)
+                                    st.session_state.inactive_employees_data = employee.get_inactive_employees(PROJECT_ID)
                                     st.session_state.show_deactivate_confirm = False
                                     st.session_state.employee_to_deactivate = None
                                     st.rerun()
@@ -246,8 +246,8 @@ with tab4:
                         st.session_state.employee_to_reactivate = emp
                         st.rerun()
                 
-                st.write(f"**Creado:** {utils.format_date(emp['created_at'])}")
-                st.write(f"**Desactivado:** {utils.format_date(emp['updated_at'])}")
+                st.write(f"**Creado:** {date_utils.format_date(emp['created_at'])}")
+                st.write(f"**Desactivado:** {date_utils.format_date(emp['updated_at'])}")
         
         # Show confirmation dialog for reactivation
         if st.session_state.show_reactivate_confirm and st.session_state.employee_to_reactivate:
@@ -259,11 +259,11 @@ with tab4:
             with col_confirm:
                 if st.button("✅ Confirmar Reactivación", type="primary"):
                     with st.spinner("Reactivando empleado..."):
-                        success = utils.reactivate_employee(st.session_state.employee_to_reactivate['id'], PROJECT_ID)
+                        success = employee.reactivate_employee(st.session_state.employee_to_reactivate['id'], PROJECT_ID)
                         if success:
                             st.success(f"✅ Empleado {st.session_state.employee_to_reactivate['full_name']} reactivado exitosamente.")
-                            st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
-                            st.session_state.inactive_employees_data = utils.get_inactive_employees(PROJECT_ID)
+                            st.session_state.employees_data = employee.get_all_employees(PROJECT_ID)
+                            st.session_state.inactive_employees_data = employee.get_inactive_employees(PROJECT_ID)
                             st.session_state.show_reactivate_confirm = False
                             st.session_state.employee_to_reactivate = None
                             st.rerun()

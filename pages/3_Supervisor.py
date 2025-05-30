@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd # Import pandas for DataFrame
 from datetime import datetime
-import utils # Your utility functions
+import pytz
+from utils import shift_request, email_utils, date_utils, calendar
 
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx" # Replace with your actual Supabase project ID
@@ -52,7 +53,7 @@ st.header("Solicitudes Pendientes de Aprobación")
 # 1. Display a list of all requests with `supervisor_status = 'pending'`
 if 'pending_requests_data' not in st.session_state:
     with st.spinner("Cargando solicitudes pendientes..."):
-        st.session_state.pending_requests_data = utils.get_pending_requests(PROJECT_ID)
+        st.session_state.pending_requests_data = shift_request.get_pending_requests(PROJECT_ID)
 
 pending_requests = st.session_state.pending_requests_data
 
@@ -78,26 +79,24 @@ else:
         # Ordenar la lista por la fecha (más cercanas primero)
         pending_requests = sorted(pending_requests, key=lambda x: x['date_request_obj'])
     except Exception as e:
-        st.warning(f"No se pudieron ordenar las solicitudes por fecha: {e}")
-
+        st.warning(f"No se pudieron ordenar las solicitudes por fecha: {e}")    
     for req in pending_requests:
         req_id = req.get('id')
-        formatted_date = utils.format_date(req.get('date_request', 'N/A'))
+        formatted_date = date_utils.format_date(req.get('date_request', 'N/A'))
         with st.expander(f"Fecha: {formatted_date} - Vuelo: {req.get('flight_number', 'N/A')} - Solicitante: {req.get('requester_name', 'N/A')}"):
                 # Verificar si el cubridor ha aceptado la solicitud
                 has_cover_accepted = req.get('date_accepted_by_cover') is not None and req.get('date_accepted_by_cover') != 'N/A'
                 
                 # Información básica de la solicitud
                 st.markdown(f"""
-                - **Fecha Solicitud:** {utils.format_date(req.get('date_request', 'N/A'))}
+                - **Fecha Solicitud:** {date_utils.format_date(req.get('date_request', 'N/A'))}
                 - **Número de Vuelo:** {req.get('flight_number')}
                 - **Solicitante:** {req.get('requester_name')} ({req.get('requester_employee_number')}, {req.get('requester_email')})
                 - **Cubridor:** {req.get('cover_name')} ({req.get('cover_employee_number')}, {req.get('cover_email')})
                 """)
-                
-                # Mostrar estado de aceptación del cubridor con colores
+                  # Mostrar estado de aceptación del cubridor con colores
                 if has_cover_accepted:
-                    st.success(f"✅ **ACEPTADO POR EL CUBRIDOR:** {utils.format_date(req.get('date_accepted_by_cover'))}")
+                    st.success(f"✅ **ACEPTADO POR EL CUBRIDOR:** {date_utils.format_date(req.get('date_accepted_by_cover'))}")
                 else:
                     st.error("❌ **PENDIENTE DE ACEPTACIÓN POR EL CUBRIDOR**")
                     st.warning("⚠️ El cubridor aún no ha aceptado esta solicitud. No se recomienda aprobarla hasta que el cubridor confirme.")
@@ -133,16 +132,17 @@ else:
                                         "supervisor_comments": supervisor_comments,
                                         "supervisor_name": supervisor_name_input
                                     }
-                                    update_success = utils.update_shift_request_status(req_id, updates, PROJECT_ID)
+                                    update_success = shift_request.update_shift_request_status(req_id, updates, PROJECT_ID)
                                     progress_bar.progress(50)
                                     
                                     if update_success:
                                         st.caption("Enviando notificaciones por correo...")
-                                        
-                                        # Get formatted dates for the emails
-                                        fecha_aprobacion = datetime.now().strftime("%d/%m/%Y")
-                                        fecha_vuelo = utils.format_date(req.get('date_request'))
-                                        fecha_aceptacion = utils.format_date(req.get('date_accepted_by_cover')) if req.get('date_accepted_by_cover') else "N/A"
+                                          # Get formatted dates for the emails (en zona horaria de Toronto)
+                                        toronto_tz = pytz.timezone('America/Toronto')
+                                        now_toronto = datetime.now(toronto_tz)
+                                        fecha_aprobacion = now_toronto.strftime("%d/%m/%Y")
+                                        fecha_vuelo = date_utils.format_date(req.get('date_request'))
+                                        fecha_aceptacion = date_utils.format_date(req.get('date_accepted_by_cover')) if req.get('date_accepted_by_cover') else "N/A"
                                         
                                         # Email to requester
                                         requester_subject = "✅ Cambio de Turno APROBADO"
@@ -195,14 +195,14 @@ Saludos,
 ShiftTradeAV"""
 
                                         # Send emails with calendar attachments
-                                        email1 = utils.send_email_with_calendar(
+                                        email1 = email_utils.send_email_with_calendar(
                                             req.get('requester_email'), 
                                             requester_subject, 
                                             requester_body,
                                             req,  # shift_data
                                             is_for_requester=True
                                         )
-                                        email2 = utils.send_email_with_calendar(
+                                        email2 = email_utils.send_email_with_calendar(
                                             req.get('cover_email'), 
                                             cover_subject, 
                                             cover_body,
@@ -243,16 +243,17 @@ ShiftTradeAV"""
                                         "supervisor_comments": supervisor_comments,
                                         "supervisor_name": supervisor_name_input
                                     }
-                                    update_success = utils.update_shift_request_status(req_id, updates, PROJECT_ID)
+                                    update_success = shift_request.update_shift_request_status(req_id, updates, PROJECT_ID)
                                     progress_bar.progress(50)
                                     
                                     if update_success:
                                         st.caption("Enviando notificaciones por correo...")
-                                        
-                                        # Get formatted dates for the emails
-                                        fecha_rechazo = datetime.now().strftime("%d/%m/%Y")
-                                        fecha_vuelo = utils.format_date(req.get('date_request'))
-                                        fecha_aceptacion = utils.format_date(req.get('date_accepted_by_cover')) if req.get('date_accepted_by_cover') else "N/A"
+                                          # Get formatted dates for the emails (en zona horaria de Toronto)
+                                        toronto_tz = pytz.timezone('America/Toronto')
+                                        now_toronto = datetime.now(toronto_tz)
+                                        fecha_rechazo = now_toronto.strftime("%d/%m/%Y")
+                                        fecha_vuelo = date_utils.format_date(req.get('date_request'))
+                                        fecha_aceptacion = date_utils.format_date(req.get('date_accepted_by_cover')) if req.get('date_accepted_by_cover') else "N/A"
                                         
                                         # Email to requester
                                         requester_subject = "❌ Cambio de Turno RECHAZADO"
@@ -304,8 +305,8 @@ Ya no necesitas cubrir este turno. Gracias por tu disposición.
 Saludos,
 ShiftTradeAV"""
 
-                                        email1 = utils.send_email(req.get('requester_email'), requester_subject, requester_body)
-                                        email2 = utils.send_email(req.get('cover_email'), cover_subject, cover_body)
+                                        email1 = email_utils.send_email(req.get('requester_email'), requester_subject, requester_body)
+                                        email2 = email_utils.send_email(req.get('cover_email'), cover_subject, cover_body)
                                         progress_bar.progress(100)
                                         
                                         st.success(f"Solicitud {req_id} rechazada por {supervisor_name_input}.")

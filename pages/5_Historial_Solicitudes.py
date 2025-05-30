@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import utils # Your utility functions
+from utils import shift_request, date_utils # Your utility functions
 import locale
 
 # Project ID for Supabase calls (ensure this is consistent with your project)
@@ -40,7 +40,7 @@ st.sidebar.markdown("---")
 # Fetch all requests for history, cache in session state
 if 'all_requests_for_history_page' not in st.session_state:
     with st.spinner("Cargando historial de solicitudes..."):
-        st.session_state.all_requests_for_history_page = utils.get_all_shift_requests(PROJECT_ID)
+        st.session_state.all_requests_for_history_page = shift_request.get_all_shift_requests(PROJECT_ID)
 
 all_requests_for_history = st.session_state.all_requests_for_history_page
 
@@ -74,11 +74,11 @@ else:
 
     # Convert relevant date columns to datetime objects and format
     if 'date_request' in df_display_full.columns:
-        df_display_full['date_request'] = df_display_full['date_request'].apply(utils.format_date)
+        df_display_full['date_request'] = df_display_full['date_request'].apply(date_utils.format_date)
     if 'supervisor_decision_date' in df_display_full.columns:
-        df_display_full['supervisor_decision_date'] = df_display_full['supervisor_decision_date'].apply(utils.format_date)
+        df_display_full['supervisor_decision_date'] = df_display_full['supervisor_decision_date'].apply(date_utils.format_date)
     if 'date_accepted_by_cover' in df_display_full.columns:
-        df_display_full['date_accepted_by_cover'] = df_display_full['date_accepted_by_cover'].apply(utils.format_date)
+        df_display_full['date_accepted_by_cover'] = df_display_full['date_accepted_by_cover'].apply(date_utils.format_date)
     rename_map = {
         'id': 'ID',
         'date_request': 'Fecha Vuelo Orig.',
@@ -101,6 +101,10 @@ else:
     df_display_filtered = df_display_filtered[ordered_renamed_columns]
 
     st.markdown("### Filtrar Historial")
+    
+    # Agregar nota sobre zona horaria
+    st.info("📋 Nota: Todas las fechas y horas se muestran en la zona horaria de Toronto (EST/EDT)")
+    
     filter_cols = st.columns(4) # Increased to 4 for new date filter
     
     with filter_cols[0]:

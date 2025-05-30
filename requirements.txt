@@ -2,6 +2,6 @@
 streamlit
 pandas
 supabase
-pytz
+pytz>=2023.3
 python-dateutil
 email-validator

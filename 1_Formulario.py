@@ -1,7 +1,8 @@
 import streamlit as st
 from datetime import datetime
 import re
-import utils  # Your utility functions for Supabase, tokens, and email
+import pytz
+from utils import auth, email_utils, date_utils, shift_request, employee
 
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx" # Replace with your actual Supabase project ID
@@ -23,7 +24,7 @@ st.title("✈️ Formulario de Solicitud de Cambio de Turno")
 # Load employees data for dropdowns
 if 'employees_data' not in st.session_state:
     with st.spinner("Cargando lista de empleados..."):
-        st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
+        st.session_state.employees_data = employee.get_all_employees(PROJECT_ID)
 
 employees = st.session_state.employees_data
 
@@ -45,11 +46,12 @@ if 'cover_data' not in st.session_state:
 col1, col2 = st.columns([3, 1])
 with col2:
     if st.button("🔄 Actualizar Lista"):
-        st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
+        st.session_state.employees_data = employee.get_all_employees(PROJECT_ID)
         st.rerun()
 
 # Form sections outside of st.form for better reactivity
 st.header("Detalles del Turno")
+st.info("📋 Nota: Todas las fechas y horas se muestran en la zona horaria de Toronto (EST/EDT)")
 date_request_input = st.date_input("Fecha del turno a Cambiar", value=datetime.today())
 
 # Flight options with schedules
@@ -140,9 +142,13 @@ if submit_button:
     elif not validate_email(cover_email):
         st.error("❌ El email del compañero que cubrirá no tiene un formato válido. Por favor, verifica que incluya @ y un dominio válido.")
     else:
-        with st.spinner("Procesando la solicitud..."):
+        with st.spinner("Procesando la solicitud..."):            # Convertir la fecha a datetime en zona horaria de Toronto
+            toronto_tz = pytz.timezone('America/Toronto')
+            # Combinar la fecha con tiempo a las 00:00 y aplicar zona horaria de Toronto
+            date_with_tz = toronto_tz.localize(datetime.combine(date_request_input, datetime.min.time()))
+            
             request_details = {
-                "date_request": str(date_request_input), # Ensure it's a string for Supabase if not handled by client
+                "date_request": date_with_tz.isoformat(), # Fecha con zona horaria explícita
                 "flight_number": flight_number,
                 "requester_name": requester_name,
                 "requester_employee_number": requester_employee_number,
@@ -151,18 +157,16 @@ if submit_button:
                 "cover_employee_number": cover_employee_number,
                 "cover_email": cover_email,
                 "supervisor_status": "pending" # Initial status
-            }
-
-            # 1. Save data to Supabase (shift_requests table)
+            }            # 1. Save data to Supabase (shift_requests table)
             progress_bar = st.progress(0)
             st.caption("Guardando solicitud en la base de datos...")
-            shift_request_id = utils.save_shift_request(request_details, PROJECT_ID)
+            shift_request_id = shift_request.save_shift_request(request_details, PROJECT_ID)
             progress_bar.progress(33)
 
             if shift_request_id:
                 st.caption("Generando token de aceptación...")
                 # 2. Generate a UUID token
-                token = utils.generate_token(shift_request_id, PROJECT_ID)
+                token = auth.generate_token(shift_request_id, PROJECT_ID)
                 progress_bar.progress(66)
 
                 if token:
@@ -172,50 +176,37 @@ if submit_button:
                     # 4. Send the link by email to the covering employee
                     st.caption("Enviando correo electrónico...")
                     email_subject = "Solicitud de Cobertura de Turno"
-                    
-                    # Get current date for the request
-                    fecha_solicitud = datetime.now().strftime("%d/%m/%Y")
-                    
+                      # Get current date for the request in Toronto timezone
+                    toronto_tz = pytz.timezone('America/Toronto')
+                    now_toronto = datetime.now(toronto_tz)
+                    fecha_solicitud = now_toronto.strftime("%d/%m/%Y")
                     email_body = f"""Hola {cover_name},
 
-{requester_name} ha solicitado que cubras su turno para el vuelo {flight_number} el {utils.format_date(date_request_input)}.
+{requester_name} ha solicitado que cubras su turno para el vuelo {flight_number} el {date_utils.format_date(date_request_input)}.
 
 **Detalles de la solicitud:**
 • Fecha de solicitud: {fecha_solicitud}
 • Vuelo: {flight_number}
-• Fecha del turno: {utils.format_date(date_request_input)}
+• Fecha del turno: {date_utils.format_date(date_request_input)} (hora de Toronto)
 • Solicitante: {requester_name}
 
 Para aceptar, por favor haz clic en el siguiente enlace (válido por 24 horas):
 {accept_url}
 
 Gracias."""
-                    email_sent = utils.send_email(cover_email, email_subject, email_body)
+                    email_sent = email_utils.send_email(cover_email, email_subject, email_body)
                     progress_bar.progress(100)
 
                     if email_sent:
                         st.success(f"✅ Solicitud enviada con ID: {shift_request_id}")
-                        st.info(f"📧 Se ha enviado un correo a **{cover_email}** con el enlace para aceptar el cambio.")
-                        st.info("💡 **Nota importante:** Si el compañero no recibe el correo, verifica que:")
-                        st.write("• El email esté escrito correctamente")
-                        st.write("• Revise su carpeta de spam/correo no deseado")
-                        st.write("• El dominio del email sea válido")
+                        st.info("Se ha enviado un correo de confirmación al compañero que cubrirá el turno.")
+                        st.balloons()
                     else:
-                        st.success(f"✅ Solicitud guardada con ID: {shift_request_id}")
-                        st.error("❌ **Error al enviar el correo de aceptación**")
-                        st.warning("⚠️ **Posibles causas del error:**")
-                        st.write("• El email ingresado podría tener un error de digitación")
-                        st.write("• El dominio del email no existe")
-                        st.write("• Problemas temporales del servidor de correo")
-                        st.info("🔧 **Soluciones:**")
-                        st.write("• Verifica que el email esté escrito correctamente")
-                        st.write("• Contacta directamente al compañero con el enlace:")
-                        st.code(accept_url)
-                        st.write("• O contacta al administrador para reenviar el correo")
+                        st.warning("La solicitud fue guardada, pero hubo un problema al enviar el correo de confirmación.")
                 else:
-                    st.error("Error al generar el token de aceptación. La solicitud fue guardada, pero el correo no pudo ser enviado.")
+                    st.warning("No se pudo generar el token de aceptación. La solicitud fue guardada, pero no se pudo enviar el enlace de aceptación.")
             else:
-                st.error("Error al guardar la solicitud en la base de datos.")
+                st.error("No se pudo guardar la solicitud. Por favor, inténtalo de nuevo.")
 
 st.markdown("---")
-st.caption("ShiftTradeAV - Gestión de Cambios de Turno")
+st.caption("ShiftTradeAV - Solicitud de Cambio de Turno")

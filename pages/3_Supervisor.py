@@ -5,6 +5,7 @@ import utils # Your utility functions
 
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx" # Replace with your actual Supabase project ID
+CORRECT_PASSWORD = "supervisor2025"
 
 st.set_page_config(
     page_title="Panel del Supervisor",
@@ -12,7 +13,22 @@ st.set_page_config(
     layout="wide"
 )
 
+# Password protection
+if 'supervisor_password_correct' not in st.session_state:
+    st.session_state.supervisor_password_correct = False
 
+if not st.session_state.supervisor_password_correct:
+    st.title("👑 Acceso al Panel de Supervisor")
+    password_attempt = st.text_input("Ingrese la contraseña para acceder:", type="password", key="supervisor_page_password")
+    if password_attempt:
+        if password_attempt == CORRECT_PASSWORD:
+            st.session_state.supervisor_password_correct = True
+            st.rerun()
+        else:
+            st.error("Contraseña incorrecta.")
+    st.stop() # Do not render the rest of the page if password is not correct
+
+# --- Main Page Content Starts Here ---
 st.title("👑 Panel de Aprobación del Supervisor")
 
 # Initialize session state for view mode if it doesn't exist

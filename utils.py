@@ -3,6 +3,9 @@ import smtplib
 import uuid
 from datetime import datetime, timedelta, timezone, date # Import date
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 from supabase import create_client, Client # Import Supabase client
 import locale
 import pytz  # For timezone handling
@@ -553,32 +556,24 @@ def create_calendar_file(shift_data, is_for_requester=True):
         # Extract flight information
         flight_info = shift_data.get('flight_number', 'Vuelo no especificado')
         
-        # Determine schedule based on flight
-        if 'AV255' in flight_info:
-            start_time = "05:00"
-            end_time = "10:00"
-        elif 'AV619' in flight_info: # NUEVO VUELO
-            start_time = "04:00"
-            end_time = "09:00"
-        elif 'AV627' in flight_info:
-            start_time = "13:00"
-            end_time = "17:30"
-        elif 'AV205' in flight_info:
-            start_time = "20:00"
-            end_time = "23:59"
-        elif 'AV625' in flight_info: # NUEVO VUELO
-            start_time = "22:00"
-            end_time = "23:59"
-        else:
-            start_time = "09:00"  # Default
-            end_time = "17:00"    # Default
+        # Get flight schedule details using the helper function
+        schedule_info = get_flight_schedule_info(flight_info)
+        start_time = schedule_info['start_time']
+        end_time = schedule_info['end_time']
+        is_overnight = schedule_info['is_overnight']
         
         # Create datetime objects for the shift in Toronto timezone
         toronto_tz = pytz.timezone('America/Toronto')
         
         # Create naive datetime objects first
         shift_start_naive = datetime.combine(shift_date, datetime.strptime(start_time, "%H:%M").time())
-        shift_end_naive = datetime.combine(shift_date, datetime.strptime(end_time, "%H:%M").time())
+        
+        # Handle overnight flights - end time is on the next day
+        if is_overnight:
+            shift_end_date = shift_date + timedelta(days=1)
+            shift_end_naive = datetime.combine(shift_end_date, datetime.strptime(end_time, "%H:%M").time())
+        else:
+            shift_end_naive = datetime.combine(shift_date, datetime.strptime(end_time, "%H:%M").time())
         
         # Localize to Toronto timezone
         shift_start = toronto_tz.localize(shift_start_naive)
@@ -600,15 +595,17 @@ def create_calendar_file(shift_data, is_for_requester=True):
         event_uid = f"shift-change-{shift_data.get('id', uuid.uuid4())}"
         
         # Determine event title and description based on who the calendar is for
+        flight_schedule_display = schedule_info['display_schedule']
+        
         if is_for_requester:
             # For the person who requested the change - they are GIVING UP this shift
-            summary = f"TURNO CEDIDO: {flight_info}"
-            description = f"Turno cedido - Intercambio aprobado\\nCubierto por: {shift_data.get('cover_name', 'N/A')}\\nSupervisor: {shift_data.get('supervisor_name', 'N/A')}"
+            summary = f"TURNO CEDIDO: {flight_info} ({flight_schedule_display})"
+            description = f"Turno cedido - Intercambio aprobado\\nVuelo: {flight_info}\\nHorario: {flight_schedule_display}\\nCubierto por: {shift_data.get('cover_name', 'N/A')}\\nSupervisor: {shift_data.get('supervisor_name', 'N/A')}"
             status = "CANCELLED"
         else:
             # For the person covering the shift - they are TAKING this shift
-            summary = f"TURNO ACEPTADO: {flight_info}"
-            description = f"Turno aceptado por intercambio\\nSolicitante original: {shift_data.get('requester_name', 'N/A')}\\nSupervisor: {shift_data.get('supervisor_name', 'N/A')}"
+            summary = f"TURNO ACEPTADO: {flight_info} ({flight_schedule_display})"
+            description = f"Turno aceptado por intercambio\\nVuelo: {flight_info}\\nHorario: {flight_schedule_display}\\nSolicitante original: {shift_data.get('requester_name', 'N/A')}\\nSupervisor: {shift_data.get('supervisor_name', 'N/A')}"
             status = "CONFIRMED"
         
         # Create iCal content with single event
@@ -669,6 +666,59 @@ def save_calendar_file(shift_data, is_for_requester=True, filename_prefix="shift
     except Exception as e:
         print(f"Error saving calendar file: {e}")
         return None, None
+
+def get_flight_schedule_info(flight_number):
+    """
+    Returns flight schedule information including proper handling of overnight flights.
+    
+    Args:
+        flight_number: String containing the flight number (e.g., 'AV205', 'AV625')
+    
+    Returns:
+        Dictionary with flight details including start_time, end_time, is_overnight, and display_schedule
+    """
+    flight_schedules = {
+        'AV255': {
+            'start_time': '05:00',
+            'end_time': '10:00',
+            'is_overnight': False,
+            'display_schedule': '5:00-10:00'
+        },
+        'AV619': {
+            'start_time': '04:00',
+            'end_time': '09:00',
+            'is_overnight': False,
+            'display_schedule': '04:00-09:00'
+        },
+        'AV627': {
+            'start_time': '13:00',
+            'end_time': '17:30',
+            'is_overnight': False,
+            'display_schedule': '13:00-17:30'
+        },
+        'AV205': {
+            'start_time': '20:00',
+            'end_time': '00:30',
+            'is_overnight': True,
+            'display_schedule': '20:00-00:30 (día siguiente)'
+        },
+        'AV625': {
+            'start_time': '20:00',
+            'end_time': '02:30',
+            'is_overnight': True,
+            'display_schedule': '20:00-02:30 (día siguiente)'
+        }
+    }
+    
+    # Default values if flight not found
+    default_schedule = {
+        'start_time': '09:00',
+        'end_time': '17:00',
+        'is_overnight': False,
+        'display_schedule': '09:00-17:00'
+    }
+    
+    return flight_schedules.get(flight_number, default_schedule)
 
 # Remember to install the Supabase Python library: pip install supabase
 # For smtplib, it's part of Python's standard library.

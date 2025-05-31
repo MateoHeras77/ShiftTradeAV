@@ -58,8 +58,8 @@ flight_options = [
     "AV255 (5:00-10:00)",
     "AV619 (04:00-09:00)", # NUEVO VUELO
     "AV627 (13:00-17:30)", 
-    "AV205 (20:00-23:59)",
-    "AV625 (22:00-23:59)"  # NUEVO VUELO
+    "AV205 (20:00-00:30+1)",  # Overnight flight - arrives next day
+    "AV625 (20:00-02:30+1)"   # Overnight flight - arrives next day
 ]
 
 selected_flight = st.selectbox("Número de Vuelo", flight_options)
@@ -178,6 +178,9 @@ if submit_button:
                     # Get current date for the request
                     fecha_solicitud = datetime.now().strftime("%d/%m/%Y")
                     
+                    # Get flight schedule information for email
+                    flight_schedule = utils.get_flight_schedule_info(flight_number)
+                    
                     email_body = f"""Hola {cover_name},
 
 {requester_name} ha solicitado que cubras su turno para el vuelo {flight_number} el {utils.format_date(date_request_input)}.
@@ -185,6 +188,7 @@ if submit_button:
 **Detalles de la solicitud:**
 • Fecha de solicitud: {fecha_solicitud}
 • Vuelo: {flight_number}
+• Horario: {flight_schedule['display_schedule']}
 • Fecha del turno: {utils.format_date(date_request_input)}
 • Solicitante: {requester_name}
 

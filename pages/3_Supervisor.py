@@ -101,70 +101,70 @@ if st.session_state.view_mode == 'pending_requests':
         for req in pending_requests:
             req_id = req.get('id')
             formatted_date = utils.format_date(req.get('date_request', 'N/A'))
-            with st.expander(f"Fecha: {formatted_date} - Vuelo: {req.get('flight_number', 'N/A')} - Solicitante: {req.get('requester_name', 'N/A')}"):
-                # Verificar si el cubridor ha aceptado la solicitud
-                has_cover_accepted = req.get('date_accepted_by_cover') is not None and req.get('date_accepted_by_cover') != 'N/A'
-                
-                # Información básica de la solicitud
-                st.markdown(f"""
-                - **Fecha Solicitud:** {utils.format_date(req.get('date_request', 'N/A'))}
-                - **Número de Vuelo:** {req.get('flight_number')}
-                - **Solicitante:** {req.get('requester_name')} ({req.get('requester_employee_number')}, {req.get('requester_email')})
-                - **Cubridor:** {req.get('cover_name')} ({req.get('cover_employee_number')}, {req.get('cover_email')})
-                """)
-                
-                # Mostrar estado de aceptación del cubridor con colores
-                if has_cover_accepted:
-                    st.success(f"✅ **ACEPTADO POR EL CUBRIDOR:** {utils.format_date(req.get('date_accepted_by_cover'))}")
-                else:
-                    st.error("❌ **PENDIENTE DE ACEPTACIÓN POR EL CUBRIDOR**")
-                    st.warning("⚠️ El cubridor aún no ha aceptado esta solicitud. No se recomienda aprobarla hasta que el cubridor confirme.")
-
-                supervisor_name_input = st.text_input("Nombre del Supervisor", key=f"supervisor_name_{req_id}")
-                supervisor_password_input = st.text_input("Contraseña del Supervisor", type="password", key=f"supervisor_password_{req_id}")
-                supervisor_comments = st.text_area("Comentarios (opcional para aprobación, obligatorio para rechazo)", key=f"comments_{req_id}")
-
-                col1, col2, col_spacer = st.columns([1,1,5])
-                with col1:
-                    # Verificar si el cubridor ha aceptado para habilitar o deshabilitar el botón de aprobar
+            expander_title = f"Fecha: {formatted_date} - Vuelo: {req.get('flight_number', 'N/A')} - Solicitante: {req.get('requester_name', 'N/A')}"
+            
+            with st.expander(expander_title):
+                # Each request will have its own form
+                with st.form(key=f"form_{req_id}"):
+                    # Información básica de la solicitud (can be outside the form if not submitted, but good to keep it grouped)
+                    st.markdown(f"""
+                    - **Fecha Solicitud:** {utils.format_date(req.get('date_request', 'N/A'))}
+                    - **Número de Vuelo:** {req.get('flight_number')}
+                    - **Solicitante:** {req.get('requester_name')} ({req.get('requester_employee_number')}, {req.get('requester_email')})
+                    - **Cubridor:** {req.get('cover_name')} ({req.get('cover_employee_number')}, {req.get('cover_email')})
+                    """)
+                    
                     has_cover_accepted = req.get('date_accepted_by_cover') is not None and req.get('date_accepted_by_cover') != 'N/A'
-                    
-                    approve_button = st.button("✅ Aprobar", key=f"approve_{req_id}", type="primary", disabled=not has_cover_accepted)
-                    
-                    if approve_button:
-                        if not supervisor_name_input:
-                            st.warning("Por favor, ingresa tu nombre de supervisor.")
-                        elif supervisor_password_input != "Avianca2025*":
-                            st.error("Contraseña del supervisor incorrecta.")
-                        elif not has_cover_accepted:
-                            st.error("No se puede aprobar esta solicitud porque el cubridor aún no la ha aceptado.")
-                        else:
-                            approval_container = st.container()
-                            with approval_container:
-                                with st.spinner(f"Aprobando solicitud {req_id}..."):
-                                    progress_bar = st.progress(0)
-                                    st.caption("Actualizando estado en la base de datos...")
-                                    now_utc = datetime.utcnow()
-                                    updates = {
-                                        "supervisor_status": "approved",
-                                        "supervisor_decision_date": now_utc.isoformat(),
-                                        "supervisor_comments": supervisor_comments,
-                                        "supervisor_name": supervisor_name_input
-                                    }
-                                    update_success = utils.update_shift_request_status(req_id, updates, PROJECT_ID)
-                                    progress_bar.progress(50)
-                                    
-                                    if update_success:
-                                        st.caption("Enviando notificaciones por correo...")
-                                        
-                                        # Get formatted dates for the emails
-                                        fecha_aprobacion = datetime.now().strftime("%d/%m/%Y")
-                                        fecha_vuelo = utils.format_date(req.get('date_request'))
-                                        fecha_aceptacion = utils.format_date(req.get('date_accepted_by_cover')) if req.get('date_accepted_by_cover') else "N/A"
-                                        
-                                        # Email to requester
-                                        requester_subject = "✅ Cambio de Turno APROBADO"
-                                        requester_body = f"""Hola {req.get('requester_name')},
+                    if has_cover_accepted:
+                        st.success(f"✅ **ACEPTADO POR EL CUBRIDOR:** {utils.format_date(req.get('date_accepted_by_cover'))}")
+                    else:
+                        st.error("❌ **PENDIENTE DE ACEPTACIÓN POR EL CUBRIDOR**")
+                        st.warning("⚠️ El cubridor aún no ha aceptado esta solicitud. No se recomienda aprobarla hasta que el cubridor confirme.")
+
+                    # Inputs within the form
+                    supervisor_name_input_val = st.text_input("Nombre del Supervisor", key=f"supervisor_name_form_{req_id}")
+                    supervisor_password_input_val = st.text_input("Contraseña del Supervisor", type="password", key=f"supervisor_password_form_{req_id}")
+                    supervisor_comments_val = st.text_area("Comentarios (opcional para aprobación, obligatorio para rechazo)", key=f"comments_form_{req_id}")
+
+                    # Submit buttons in columns
+                    col1, col2, col_spacer = st.columns([1,1,5]) # Adjusted spacer
+                    with col1:
+                        approve_submitted = st.form_submit_button("✅ Aprobar", type="primary", disabled=not has_cover_accepted)
+                    with col2:
+                        reject_submitted = st.form_submit_button("❌ Rechazar")
+
+                # Logic after form submission (outside the form definition)
+                if approve_submitted:
+                    if not supervisor_name_input_val:
+                        st.warning("Por favor, ingresa tu nombre de supervisor.")
+                    elif supervisor_password_input_val != CORRECT_PASSWORD: # Use defined CORRECT_PASSWORD
+                        st.error("Contraseña del supervisor incorrecta.")
+                    elif not has_cover_accepted: 
+                        st.error("No se puede aprobar esta solicitud porque el cubridor aún no la ha aceptado.")
+                    else:
+                        # approval_container = st.container() # Not strictly necessary here
+                        # with approval_container:
+                        with st.spinner(f"Aprobando solicitud {req_id}..."):
+                            progress_bar = st.progress(0)
+                            st.caption("Actualizando estado en la base de datos...")
+                            now_utc = datetime.utcnow()
+                            updates = {
+                                "supervisor_status": "approved",
+                                "supervisor_decision_date": now_utc.isoformat(),
+                                "supervisor_comments": supervisor_comments_val,
+                                "supervisor_name": supervisor_name_input_val
+                            }
+                            update_success = utils.update_shift_request_status(req_id, updates, PROJECT_ID)
+                            progress_bar.progress(50)
+                            
+                            if update_success:
+                                st.caption("Enviando notificaciones por correo...")
+                                fecha_aprobacion = datetime.now().strftime("%d/%m/%Y")
+                                fecha_vuelo = utils.format_date(req.get('date_request'))
+                                fecha_aceptacion = utils.format_date(req.get('date_accepted_by_cover')) if req.get('date_accepted_by_cover') else "N/A"
+                                
+                                requester_subject = "✅ Cambio de Turno APROBADO"
+                                requester_body = f"""Hola {req.get('requester_name')},
 
 ¡Excelentes noticias! Tu solicitud de cambio de turno ha sido APROBADA.
 
@@ -172,7 +172,7 @@ if st.session_state.view_mode == 'pending_requests':
 • Vuelo: {req.get('flight_number')}
 • Fecha del turno: {fecha_vuelo}
 • Compañero que cubre: {req.get('cover_name')}
-• Supervisor que aprobó: {supervisor_name_input}
+• Supervisor que aprobó: {supervisor_name_input_val}
 • Fecha de aprobación: {fecha_aprobacion}
 
 **Cronología:**
@@ -180,16 +180,14 @@ if st.session_state.view_mode == 'pending_requests':
 2. Aceptado por {req.get('cover_name')} el {fecha_aceptacion} ✅
 3. Aprobado por supervisor el {fecha_aprobacion} ✅
 
-**Comentarios del supervisor:** {supervisor_comments if supervisor_comments else "Sin comentarios adicionales"}
+**Comentarios del supervisor:** {supervisor_comments_val if supervisor_comments_val else "Sin comentarios adicionales"}
 
 El cambio de turno está oficialmente autorizado.
 
 Saludos,
 ShiftTradeAV"""
-
-                                        # Email to cover employee
-                                        cover_subject = "✅ Cambio de Turno APROBADO"
-                                        cover_body = f"""Hola {req.get('cover_name')},
+                                cover_subject = "✅ Cambio de Turno APROBADO"
+                                cover_body = f"""Hola {req.get('cover_name')},
 
 El cambio de turno que aceptaste cubrir ha sido APROBADO por el supervisor.
 
@@ -197,7 +195,7 @@ El cambio de turno que aceptaste cubrir ha sido APROBADO por el supervisor.
 • Vuelo: {req.get('flight_number')}
 • Fecha del turno: {fecha_vuelo}
 • Solicitante original: {req.get('requester_name')}
-• Supervisor que aprobó: {supervisor_name_input}
+• Supervisor que aprobó: {supervisor_name_input_val}
 • Fecha de aprobación: {fecha_aprobacion}
 
 **Cronología:**
@@ -205,76 +203,69 @@ El cambio de turno que aceptaste cubrir ha sido APROBADO por el supervisor.
 2. Tú aceptaste el {fecha_aceptacion} ✅
 3. Aprobado por supervisor el {fecha_aprobacion} ✅
 
-**Comentarios del supervisor:** {supervisor_comments if supervisor_comments else "Sin comentarios adicionales"}
+**Comentarios del supervisor:** {supervisor_comments_val if supervisor_comments_val else "Sin comentarios adicionales"}
 
 Gracias por tu colaboración. El cambio está oficialmente autorizado.
 
 Saludos,
 ShiftTradeAV"""
+                                email1 = utils.send_email_with_calendar(
+                                    req.get('requester_email'), 
+                                    requester_subject, 
+                                    requester_body,
+                                    req, 
+                                    is_for_requester=True
+                                )
+                                email2 = utils.send_email_with_calendar(
+                                    req.get('cover_email'), 
+                                    cover_subject, 
+                                    cover_body,
+                                    req, 
+                                    is_for_requester=False
+                                )
+                                progress_bar.progress(100)
+                                
+                                st.success(f"Solicitud {req_id} aprobada por {supervisor_name_input_val}.")
+                                if not (email1 and email2):
+                                    st.warning("La aprobación fue guardada, pero hubo problemas al enviar algunas notificaciones por correo.")
+                                
+                                if 'pending_requests_data' in st.session_state:
+                                    del st.session_state.pending_requests_data
+                                st.rerun()
+                            else:
+                                st.error(f"Error al aprobar la solicitud {req_id}.")
 
-                                        # Send emails with calendar attachments
-                                        email1 = utils.send_email_with_calendar(
-                                            req.get('requester_email'), 
-                                            requester_subject, 
-                                            requester_body,
-                                            req,  # shift_data
-                                            is_for_requester=True
-                                        )
-                                        email2 = utils.send_email_with_calendar(
-                                            req.get('cover_email'), 
-                                            cover_subject, 
-                                            cover_body,
-                                            req,  # shift_data
-                                            is_for_requester=False
-                                        )
-                                        progress_bar.progress(100)
-                                        
-                                        st.success(f"Solicitud {req_id} aprobada por {supervisor_name_input}.")
-                                        if not (email1 and email2):
-                                            st.warning("La aprobación fue guardada, pero hubo problemas al enviar algunas notificaciones por correo.")
-                                        
-                                        # Clear pending requests cache and rerun
-                                        if 'pending_requests_data' in st.session_state:
-                                            del st.session_state.pending_requests_data
-                                        st.rerun()
-                                    else:
-                                        st.error(f"Error al aprobar la solicitud {req_id}.")
-
-                with col2:
-                    if st.button("❌ Rechazar", key=f"reject_{req_id}"):
-                        if not supervisor_name_input:
-                            st.warning("Por favor, ingresa tu nombre de supervisor.")
-                        elif supervisor_password_input != "Avianca2025*":
-                            st.error("Contraseña del supervisor incorrecta.")
-                        elif not supervisor_comments:
-                            st.warning("Por favor, añade un comentario explicando el motivo del rechazo.")
-                        else:
-                            rejection_container = st.container()
-                            with rejection_container:
-                                with st.spinner(f"Rechazando solicitud {req_id}..."):
-                                    progress_bar = st.progress(0)
-                                    st.caption("Actualizando estado en la base de datos...")
-                                    now_utc = datetime.utcnow()
-                                    updates = {
-                                        "supervisor_status": "rejected",
-                                        "supervisor_decision_date": now_utc.isoformat(),
-                                        "supervisor_comments": supervisor_comments,
-                                        "supervisor_name": supervisor_name_input
-                                    }
-                                    update_success = utils.update_shift_request_status(req_id, updates, PROJECT_ID)
-                                    progress_bar.progress(50)
-                                    
-                                    if update_success:
-                                        st.caption("Enviando notificaciones por correo...")
-                                        
-                                        # Get formatted dates for the emails
-                                        fecha_rechazo = datetime.now().strftime("%d/%m/%Y")
-                                        fecha_vuelo = utils.format_date(req.get('date_request'))
-                                        fecha_aceptacion = utils.format_date(req.get('date_accepted_by_cover')) if req.get('date_accepted_by_cover') else "N/A"
-                                        
-                                        # Email to requester
-                                        requester_subject = "❌ Cambio de Turno RECHAZADO"
-                                        requester_body = f"""Hola {req.get('requester_name')},
+                elif reject_submitted: # Check if reject button was pressed
+                    if not supervisor_name_input_val:
+                        st.warning("Por favor, ingresa tu nombre de supervisor.")
+                    elif supervisor_password_input_val != CORRECT_PASSWORD: # Use defined CORRECT_PASSWORD
+                        st.error("Contraseña del supervisor incorrecta.")
+                    elif not supervisor_comments_val: # Comments are mandatory for rejection
+                        st.warning("Por favor, añade un comentario explicando el motivo del rechazo.")
+                    else:
+                        # rejection_container = st.container() # Not strictly necessary
+                        # with rejection_container:
+                        with st.spinner(f"Rechazando solicitud {req_id}..."):
+                            progress_bar = st.progress(0)
+                            st.caption("Actualizando estado en la base de datos...")
+                            now_utc = datetime.utcnow()
+                            updates = {
+                                "supervisor_status": "rejected",
+                                "supervisor_decision_date": now_utc.isoformat(),
+                                "supervisor_comments": supervisor_comments_val,
+                                "supervisor_name": supervisor_name_input_val
+                            }
+                            update_success = utils.update_shift_request_status(req_id, updates, PROJECT_ID)
+                            progress_bar.progress(50)
+                            
+                            if update_success:
+                                st.caption("Enviando notificaciones por correo...")
+                                fecha_rechazo = datetime.now().strftime("%d/%m/%Y")
+                                fecha_vuelo = utils.format_date(req.get('date_request'))
+                                fecha_aceptacion = utils.format_date(req.get('date_accepted_by_cover')) if req.get('date_accepted_by_cover') else "N/A"
+                                
+                                requester_subject = "❌ Cambio de Turno RECHAZADO"
+                                requester_body = f"""Hola {req.get('requester_name')},
 
 Lamentamos informarte que tu solicitud de cambio de turno ha sido RECHAZADA.
 
@@ -282,7 +273,7 @@ Lamentamos informarte que tu solicitud de cambio de turno ha sido RECHAZADA.
 • Vuelo: {req.get('flight_number')}
 • Fecha del turno: {fecha_vuelo}
 • Compañero que había aceptado: {req.get('cover_name')}
-• Supervisor que rechazó: {supervisor_name_input}
+• Supervisor que rechazó: {supervisor_name_input_val}
 • Fecha de rechazo: {fecha_rechazo}
 
 **Cronología:**
@@ -290,16 +281,14 @@ Lamentamos informarte que tu solicitud de cambio de turno ha sido RECHAZADA.
 2. Aceptado por {req.get('cover_name')} el {fecha_aceptacion} ✅
 3. Rechazado por supervisor el {fecha_rechazo} ❌
 
-**Motivo del rechazo:** {supervisor_comments}
+**Motivo del rechazo:** {supervisor_comments_val}
 
 Puedes presentar una nueva solicitud si consideras que las circunstancias han cambiado.
 
 Saludos,
 ShiftTradeAV"""
-
-                                        # Email to cover employee
-                                        cover_subject = "❌ Cambio de Turno RECHAZADO"
-                                        cover_body = f"""Hola {req.get('cover_name')},
+                                cover_subject = "❌ Cambio de Turno RECHAZADO"
+                                cover_body = f"""Hola {req.get('cover_name')},
 
 Te informamos que el cambio de turno que habías aceptado cubrir ha sido RECHAZADO por el supervisor.
 
@@ -307,7 +296,7 @@ Te informamos que el cambio de turno que habías aceptado cubrir ha sido RECHAZA
 • Vuelo: {req.get('flight_number')}
 • Fecha del turno: {fecha_vuelo}
 • Solicitante original: {req.get('requester_name')}
-• Supervisor que rechazó: {supervisor_name_input}
+• Supervisor que rechazó: {supervisor_name_input_val}
 • Fecha de rechazo: {fecha_rechazo}
 
 **Cronología:**
@@ -315,25 +304,25 @@ Te informamos que el cambio de turno que habías aceptado cubrir ha sido RECHAZA
 2. Tú aceptaste el {fecha_aceptacion} ✅
 3. Rechazado por supervisor el {fecha_rechazo} ❌
 
-**Motivo del rechazo:** {supervisor_comments}
+**Motivo del rechazo:** {supervisor_comments_val}
 
 Ya no necesitas cubrir este turno. Gracias por tu disposición.
 
 Saludos,
 ShiftTradeAV"""
-
-                                        email1 = utils.send_email(req.get('requester_email'), requester_subject, requester_body)
-                                        email2 = utils.send_email(req.get('cover_email'), cover_subject, cover_body)
-                                        progress_bar.progress(100)
-                                        
-                                        st.success(f"Solicitud {req_id} rechazada por {supervisor_name_input}.")
-                                        if not (email1 and email2):
-                                            st.warning("El rechazo fue guardado, pero hubo problemas al enviar algunas notificaciones por correo.")
-                                        
-                                        # Clear pending requests cache and rerun
-                                        if 'pending_requests_data' in st.session_state:
-                                            del st.session_state.pending_requests_data
-                                        st.rerun()
+                                email1 = utils.send_email(req.get('requester_email'), requester_subject, requester_body)
+                                email2 = utils.send_email(req.get('cover_email'), cover_subject, cover_body)
+                                progress_bar.progress(100)
+                                
+                                st.success(f"Solicitud {req_id} rechazada por {supervisor_name_input_val}.")
+                                if not (email1 and email2):
+                                    st.warning("El rechazo fue guardado, pero hubo problemas al enviar algunas notificaciones por correo.")
+                                
+                                if 'pending_requests_data' in st.session_state:
+                                    del st.session_state.pending_requests_data
+                                st.rerun()
+                            else:
+                                st.error(f"Error al rechazar la solicitud {req_id}.")
                 st.markdown("---")
 
 elif st.session_state.view_mode == 'history_view':

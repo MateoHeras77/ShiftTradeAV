@@ -1,0 +1,11 @@
+LICENCIA DE USO
+
+Este software es propiedad exclusiva de su autor. Queda prohibida toda forma de uso, distribución, reproducción o modificación sin la autorización expresa y por escrito del creador.
+
+Se puede conceder una licencia gratuita de uso personal, la cual está sujeta a la aceptación de los términos aquí expuestos y puede ser revocada o modificada en cualquier momento a discreción del autor. El uso continuo de esta aplicación implica la aceptación plena y sin reservas de estos términos.
+
+Queda estrictamente prohibido cualquier uso comercial, redistribución o explotación con fines lucrativos del software sin un acuerdo previo con el autor y el pago de las tarifas correspondientes.
+
+El incumplimiento de estas condiciones podrá dar lugar a la revocación inmediata de la licencia y al ejercicio de acciones legales conforme a la legislación aplicable.
+
+Para obtener licencias comerciales o información adicional, comuníquese directamente con el autor de la aplicación.

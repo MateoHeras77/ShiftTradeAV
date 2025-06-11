@@ -1,9 +1,11 @@
 import streamlit as st
 import re
 import utils
+import config
 
 # Project ID for Supabase calls
-PROJECT_ID = "lperiyftrgzchrzvutgx"
+PROJECT_ID = config.PROJECT_ID
+ADMIN_PASSWORD = config.ADMIN_PASSWORD
 
 # Function to validate email format
 def validate_email(email):
@@ -37,7 +39,7 @@ if not st.session_state.admin_authenticated:
     admin_password = st.text_input("Contraseña de administrador", type="password")
     
     if st.button("Acceder"):
-        if admin_password == "admin123":  # You should use a more secure password
+        if admin_password == ADMIN_PASSWORD:
             st.session_state.admin_authenticated = True
             st.success("✅ Acceso concedido")
             st.rerun()

@@ -66,6 +66,16 @@ def test_overnight_flights():
         'cover_name': 'Carmen Torres',
         'supervisor_name': 'Miguel Supervisor'
     }
+
+    # Test data for AV627-AV205 (combo overnight)
+    test_shift_data_combo = {
+        'id': 'test_999',
+        'flight_number': 'AV627-AV205',
+        'date_request': '2025-06-04',  # June 4th, 2025
+        'requester_name': 'Luis Gómez',
+        'cover_name': 'Mario Díaz',
+        'supervisor_name': 'Julia Supervisor'
+    }
     
     print("\n1. Testing flight schedule info function:")
     
@@ -73,6 +83,9 @@ def test_overnight_flights():
     schedule_av205 = utils.get_flight_schedule_info('AV205')
     schedule_av625 = utils.get_flight_schedule_info('AV625')
     schedule_av255 = utils.get_flight_schedule_info('AV255')
+    schedule_combo1 = utils.get_flight_schedule_info('AV255-AV627')
+    schedule_combo2 = utils.get_flight_schedule_info('AV619-AV627')
+    schedule_combo3 = utils.get_flight_schedule_info('AV627-AV205')
     
     print(f"AV205 schedule: {schedule_av205}")
     print(f"AV625 schedule: {schedule_av625}")
@@ -82,6 +95,9 @@ def test_overnight_flights():
     assert schedule_av205['is_overnight'] == True, "AV205 should be overnight"
     assert schedule_av625['is_overnight'] == True, "AV625 should be overnight"
     assert schedule_av255['is_overnight'] == False, "AV255 should not be overnight"
+    assert schedule_combo1['is_overnight'] == False, "AV255-AV627 should not be overnight"
+    assert schedule_combo2['is_overnight'] == False, "AV619-AV627 should not be overnight"
+    assert schedule_combo3['is_overnight'] == True, "AV627-AV205 should be overnight"
     
     print("✅ Flight schedule info tests passed!")
     
@@ -124,7 +140,26 @@ def test_overnight_flights():
             print("❌ Failed to generate AV625 calendar")
     except Exception as e:
         print(f"❌ Error generating AV625 calendar: {e}")
-    
+
+    # Test calendar file generation for AV627-AV205 (combo)
+    try:
+        calendar_content_combo = utils.create_calendar_file(test_shift_data_combo, is_for_requester=False)
+        if calendar_content_combo:
+            print("✅ AV627-AV205 calendar file generated successfully")
+
+            # Check if the calendar contains the correct UTC times
+            # Start: 13:00 Toronto (June 4) = 17:00 UTC (June 4)
+            # End: 00:30 Toronto (June 5) = 04:30 UTC (June 5)
+            if "20250604T170000Z" in calendar_content_combo and "20250605T043000Z" in calendar_content_combo:
+                print("✅ AV627-AV205 calendar correctly shows UTC times for overnight combo")
+            else:
+                print("❌ AV627-AV205 calendar may not handle overnight transition correctly")
+
+        else:
+            print("❌ Failed to generate AV627-AV205 calendar")
+    except Exception as e:
+        print(f"❌ Error generating AV627-AV205 calendar: {e}")
+
     # Test calendar file generation for AV255 (regular flight)
     try:
         calendar_content_av255 = utils.create_calendar_file(test_shift_data_av255, is_for_requester=False)
@@ -156,6 +191,12 @@ def test_overnight_flights():
             print("✅ AV205 calendar includes correct schedule display")
         else:
             print("❌ AV205 calendar missing proper schedule display")
+
+    if 'calendar_content_combo' in locals():
+        if "13:00-00:30 (día siguiente)" in calendar_content_combo:
+            print("✅ AV627-AV205 calendar includes correct schedule display")
+        else:
+            print("❌ AV627-AV205 calendar missing proper schedule display")
     
     print("\n4. Detailed calendar analysis:")
     
@@ -173,6 +214,11 @@ def test_overnight_flights():
     if 'calendar_content_av255' in locals():
         print("\nFull AV255 calendar content:")
         print(calendar_content_av255)
+        print("\n" + "="*50)
+
+    if 'calendar_content_combo' in locals():
+        print("\nFull AV627-AV205 calendar content:")
+        print(calendar_content_combo)
         print("\n" + "="*50)
 
     print("\n✅ All tests completed!")

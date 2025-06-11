@@ -32,6 +32,7 @@ class MockStreamlit:
 sys.modules['streamlit'] = MockStreamlit()
 
 import utils
+from date_utils import get_flight_schedule_info, create_calendar_file
 
 def test_overnight_flights():
     """Test overnight flight calendar generation"""
@@ -80,12 +81,12 @@ def test_overnight_flights():
     print("\n1. Testing flight schedule info function:")
     
     # Test get_flight_schedule_info function
-    schedule_av205 = utils.get_flight_schedule_info('AV205')
-    schedule_av625 = utils.get_flight_schedule_info('AV625')
-    schedule_av255 = utils.get_flight_schedule_info('AV255')
-    schedule_combo1 = utils.get_flight_schedule_info('AV255-AV627')
-    schedule_combo2 = utils.get_flight_schedule_info('AV619-AV627')
-    schedule_combo3 = utils.get_flight_schedule_info('AV627-AV205')
+    schedule_av205 = get_flight_schedule_info('AV205')
+    schedule_av625 = get_flight_schedule_info('AV625')
+    schedule_av255 = get_flight_schedule_info('AV255')
+    schedule_combo1 = get_flight_schedule_info('AV255-AV627')
+    schedule_combo2 = get_flight_schedule_info('AV619-AV627')
+    schedule_combo3 = get_flight_schedule_info('AV627-AV205')
     
     print(f"AV205 schedule: {schedule_av205}")
     print(f"AV625 schedule: {schedule_av625}")
@@ -105,7 +106,7 @@ def test_overnight_flights():
     
     # Test calendar file generation for AV205
     try:
-        calendar_content_av205 = utils.create_calendar_file(test_shift_data_av205, is_for_requester=False)
+        calendar_content_av205 = create_calendar_file(test_shift_data_av205, is_for_requester=False)
         if calendar_content_av205:
             print("✅ AV205 calendar file generated successfully")
             
@@ -124,7 +125,7 @@ def test_overnight_flights():
     
     # Test calendar file generation for AV625
     try:
-        calendar_content_av625 = utils.create_calendar_file(test_shift_data_av625, is_for_requester=False)
+        calendar_content_av625 = create_calendar_file(test_shift_data_av625, is_for_requester=False)
         if calendar_content_av625:
             print("✅ AV625 calendar file generated successfully")
             
@@ -143,7 +144,7 @@ def test_overnight_flights():
 
     # Test calendar file generation for AV627-AV205 (combo)
     try:
-        calendar_content_combo = utils.create_calendar_file(test_shift_data_combo, is_for_requester=False)
+        calendar_content_combo = create_calendar_file(test_shift_data_combo, is_for_requester=False)
         if calendar_content_combo:
             print("✅ AV627-AV205 calendar file generated successfully")
 
@@ -162,7 +163,7 @@ def test_overnight_flights():
 
     # Test calendar file generation for AV255 (regular flight)
     try:
-        calendar_content_av255 = utils.create_calendar_file(test_shift_data_av255, is_for_requester=False)
+        calendar_content_av255 = create_calendar_file(test_shift_data_av255, is_for_requester=False)
         if calendar_content_av255:
             print("✅ AV255 calendar file generated successfully")
             

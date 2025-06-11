@@ -707,6 +707,24 @@ def get_flight_schedule_info(flight_number):
             'end_time': '02:30',
             'is_overnight': True,
             'display_schedule': '20:00-02:30 (día siguiente)'
+        },
+        'AV255-AV627': {
+            'start_time': '05:00',
+            'end_time': '17:30',
+            'is_overnight': False,
+            'display_schedule': '5:00-17:30'
+        },
+        'AV619-AV627': {
+            'start_time': '05:00',
+            'end_time': '17:30',
+            'is_overnight': False,
+            'display_schedule': '5:00-17:30'
+        },
+        'AV627-AV205': {
+            'start_time': '13:00',
+            'end_time': '00:30',
+            'is_overnight': True,
+            'display_schedule': '13:00-00:30 (día siguiente)'
         }
     }
     

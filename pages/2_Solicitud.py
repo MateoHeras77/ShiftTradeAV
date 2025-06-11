@@ -2,7 +2,8 @@ import streamlit as st
 from datetime import datetime
 
 try:
-    import utils # Your utility functions
+import utils # Your utility functions
+import config
 except st.errors.StreamlitSecretNotFoundError as e:
     st.error(
         "CRITICAL ERROR: Could not load application secrets required by 'utils.py'.\n"
@@ -18,7 +19,7 @@ except ImportError as e:
     st.stop()
 
 # Project ID for Supabase calls
-PROJECT_ID = "lperiyftrgzchrzvutgx" # Replace with your actual Supabase project ID
+PROJECT_ID = config.PROJECT_ID
 
 st.set_page_config(
     page_title="Aceptar Cambio",

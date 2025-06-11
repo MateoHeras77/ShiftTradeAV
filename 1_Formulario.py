@@ -2,9 +2,10 @@ import streamlit as st
 from datetime import datetime, timedelta
 import re
 import utils  # Your utility functions for Supabase, tokens, and email
+import config
 
 # Project ID for Supabase calls
-PROJECT_ID = "lperiyftrgzchrzvutgx"  # Replace with your actual Supabase project ID
+PROJECT_ID = config.PROJECT_ID
 
 
 # Function to validate email format

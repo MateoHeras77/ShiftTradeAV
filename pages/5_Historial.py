@@ -8,9 +8,10 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import utils
+import config
 
 # Project ID (ensure this is consistent, or pass it around/get from a central config)
-PROJECT_ID = "lperiyftrgzchrzvutgx"
+PROJECT_ID = config.PROJECT_ID
 
 st.set_page_config(
     page_title="Historial de Cambios",

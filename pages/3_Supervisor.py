@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd  # Import pandas for DataFrame
 from datetime import datetime
 import utils  # Your utility functions
+import config
 
 
 def render_pending_request(req):
@@ -276,8 +277,8 @@ ShiftTradeAV"""
 
 
 # Project ID for Supabase calls
-PROJECT_ID = "lperiyftrgzchrzvutgx"  # Replace with your actual Supabase project ID
-CORRECT_PASSWORD = "supervisor2025"
+PROJECT_ID = config.PROJECT_ID
+CORRECT_PASSWORD = config.SUPERVISOR_PASSWORD
 
 st.set_page_config(page_title="Panel del Supervisor", page_icon="👑", layout="wide")
 

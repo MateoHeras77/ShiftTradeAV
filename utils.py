@@ -715,10 +715,10 @@ def get_flight_schedule_info(flight_number):
             'display_schedule': '5:00-17:30'
         },
         'AV619-AV627': {
-            'start_time': '05:00',
+            'start_time': '04:00',
             'end_time': '17:30',
             'is_overnight': False,
-            'display_schedule': '5:00-17:30'
+            'display_schedule': '4:00-17:30'
         },
         'AV627-AV205': {
             'start_time': '13:00',

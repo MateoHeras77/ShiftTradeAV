@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime, date
 import sys
 import os
+from dataclasses import asdict
 
 # Add the root directory to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -23,7 +24,7 @@ st.title("📜 Historial de Intercambios de Turno")
 # Function to load and prepare data
 def load_data():
     with st.spinner("Cargando historial de solicitudes..."):
-        all_requests = utils.get_all_shift_requests(PROJECT_ID)
+        all_requests = [asdict(r) for r in utils.get_all_shift_requests(PROJECT_ID)]
     if not all_requests:
         st.warning("No hay solicitudes de intercambio en el historial.")
         return pd.DataFrame()

@@ -1,6 +1,7 @@
 import streamlit as st
 import re
 import utils
+from dataclasses import asdict
 
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx"
@@ -47,16 +48,16 @@ if not st.session_state.admin_authenticated:
 
 # Load employees data
 if 'employees_data' not in st.session_state:
-    st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
+    st.session_state.employees_data = [asdict(e) for e in utils.get_all_employees(PROJECT_ID)]
 if 'inactive_employees_data' not in st.session_state:
-    st.session_state.inactive_employees_data = utils.get_inactive_employees(PROJECT_ID)
+    st.session_state.inactive_employees_data = [asdict(e) for e in utils.get_inactive_employees(PROJECT_ID)]
 
 # Refresh employees data
 col1, col2 = st.columns([3, 1])
 with col2:
     if st.button("🔄 Actualizar Lista"):
-        st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
-        st.session_state.inactive_employees_data = utils.get_inactive_employees(PROJECT_ID)
+        st.session_state.employees_data = [asdict(e) for e in utils.get_all_employees(PROJECT_ID)]
+        st.session_state.inactive_employees_data = [asdict(e) for e in utils.get_inactive_employees(PROJECT_ID)]
         st.rerun()
 
 employees = st.session_state.employees_data

@@ -8,7 +8,11 @@ from email.mime.base import MIMEBase
 from email import encoders
 from supabase import create_client, Client # Import Supabase client
 import locale
-import pytz  # For timezone handling
+import pytz  # type: ignore  # For timezone handling
+from dataclasses import asdict
+from typing import List, Optional
+
+from models import ShiftRequest, Employee, Token
 
 # Supabase configuration
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
@@ -30,25 +34,46 @@ SMTP_USERNAME = st.secrets["SMTP_USERNAME"]
 SMTP_PASSWORD = st.secrets["SMTP_PASSWORD"]
 SENDER_EMAIL = st.secrets["SENDER_EMAIL"]
 
-def generate_token(shift_request_id: str, project_id: str): # project_id is not strictly needed if supabase client is global
-    """Generates a unique token, stores it in Supabase, and returns the token."""
+
+def _shift_request_from_dict(data: dict) -> ShiftRequest:
+    return ShiftRequest(**data)
+
+
+def _employee_from_dict(data: dict) -> Employee:
+    return Employee(**data)
+
+
+def _token_from_dict(data: dict) -> Token:
+    expires_at_raw = data.get("expires_at")
+    expires_at = datetime.fromisoformat(expires_at_raw) if isinstance(expires_at_raw, str) else expires_at_raw
+    assert isinstance(expires_at, datetime)
+    return Token(
+        token=data["token"],
+        shift_request_id=data["shift_request_id"],
+        expires_at=expires_at,
+        used=data.get("used", False),
+    )
+
+def generate_token(shift_request_id: str, project_id: str) -> Optional[Token]:
+    """Generate a unique token, store it in Supabase and return a ``Token`` instance."""
     if not supabase:
         st.error("Cliente Supabase no inicializado. No se puede generar el token.")
         return None
     token = uuid.uuid4()
-    expires_at = datetime.now(timezone.utc) + timedelta(hours=24) # Use timezone.utc
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
 
     try:
-        response = supabase.table('tokens').insert({
+        record = {
             "token": str(token),
             "shift_request_id": str(shift_request_id),
             "expires_at": expires_at.isoformat(),
-            "used": False
-        }).execute()
+            "used": False,
+        }
+        response = supabase.table("tokens").insert(record).execute()
         
         if response.data and len(response.data) > 0:
             print(f"Token {token} saved for shift_request_id {shift_request_id}")
-            return str(token)
+            return Token(token=str(token), shift_request_id=str(shift_request_id), expires_at=expires_at, used=False)
         else:
             error_message = "No data returned from Supabase or error in response."
             if hasattr(response, 'error') and response.error:
@@ -63,23 +88,36 @@ def generate_token(shift_request_id: str, project_id: str): # project_id is not 
         st.error(f"Excepción al guardar token en Supabase: {e}")
         return None
 
-def verify_token(token_str: str, project_id: str):
-    """Verifies a token against Supabase. Returns the shift_request_id if valid, else None."""
+def verify_token(token_str: str, project_id: str) -> Optional[Token]:
+    """Verify a token against Supabase and return a ``Token`` instance if valid."""
     if not supabase:
         st.error("Cliente Supabase no inicializado. No se puede verificar el token.")
         return None
     try:
-        response = supabase.table('tokens').select('shift_request_id, expires_at, used').eq('token', token_str).single().execute()
+        response = (
+            supabase.table("tokens")
+            .select("shift_request_id, expires_at, used")
+            .eq("token", token_str)
+            .single()
+            .execute()
+        )
         if response.data:
             token_data = response.data
-            expires_at_str = token_data['expires_at']
-            expires_at = datetime.fromisoformat(expires_at_str) # Assumes ISO format from Supabase
+            expires_at_str = token_data["expires_at"]
+            expires_at = datetime.fromisoformat(expires_at_str)
 
-            if not token_data['used'] and expires_at > datetime.now(timezone.utc): # Compare with UTC now
-                return token_data['shift_request_id']
+            if not token_data["used"] and expires_at > datetime.now(timezone.utc):
+                return Token(
+                    token=token_str,
+                    shift_request_id=token_data["shift_request_id"],
+                    expires_at=expires_at,
+                    used=False,
+                )
             else:
-                if token_data['used']: st.warning("Token ya ha sido utilizado.")
-                if expires_at <= datetime.now(timezone.utc): st.warning("Token ha expirado.")
+                if token_data["used"]:
+                    st.warning("Token ya ha sido utilizado.")
+                if expires_at <= datetime.now(timezone.utc):
+                    st.warning("Token ha expirado.")
                 return None
         else:
             error_message = "Token no encontrado o error en la respuesta."
@@ -92,20 +130,22 @@ def verify_token(token_str: str, project_id: str):
         st.error(f"Excepción al verificar token: {e}")
         return None
 
-def mark_token_as_used(token_str: str, project_id: str):
-    """Marks a token as used in Supabase."""
+def mark_token_as_used(token: Token, project_id: str) -> bool:
+    """Mark a token as used in Supabase."""
     if not supabase:
         st.error("Cliente Supabase no inicializado. No se puede marcar el token.")
         return False
     try:
-        response = supabase.table('tokens').update({'used': True}).eq('token', token_str).execute()
+        response = (
+            supabase.table("tokens").update({"used": True}).eq("token", token.token).execute()
+        )
         if response.data and len(response.data) > 0:
-            print(f"Token {token_str} marked as used.")
+            print(f"Token {token.token} marked as used.")
             return True
         else:
             error_message = "No se pudo marcar el token como usado o no se encontró."
             if hasattr(response, 'error') and response.error: error_message = response.error.message
-            print(f"Failed to mark token {token_str} as used: {error_message}")
+            print(f"Failed to mark token {token.token} as used: {error_message}")
             st.error(f"Error de Supabase al marcar token como usado: {error_message}")
             return False
     except Exception as e:
@@ -131,7 +171,13 @@ def send_email(recipient_email, subject, body):
         st.error(f"Error al enviar correo a {recipient_email}: {e}")
         return False
 
-def send_email_with_calendar(recipient_email, subject, body, shift_data, is_for_requester=True):
+def send_email_with_calendar(
+    recipient_email: str,
+    subject: str,
+    body: str,
+    shift_data: ShiftRequest,
+    is_for_requester: bool = True,
+) -> bool:
     """
     Sends an email with a calendar attachment.
     
@@ -139,7 +185,7 @@ def send_email_with_calendar(recipient_email, subject, body, shift_data, is_for_
         recipient_email: Email address of recipient
         subject: Email subject
         body: Email body text
-        shift_data: Dictionary containing shift information for calendar creation
+        shift_data: ``ShiftRequest`` instance with shift information
         is_for_requester: Boolean, True if calendar is for the person requesting the shift change
     
     Returns:
@@ -168,7 +214,7 @@ def send_email_with_calendar(recipient_email, subject, body, shift_data, is_for_
         if calendar_content:
             # Create temporary calendar file
             person_type = "solicitante" if is_for_requester else "cobertura"
-            filename = f"turno_{person_type}_{shift_data.get('flight_number', 'AV')}.ics"
+            filename = f"turno_{person_type}_{shift_data.flight_number or 'AV'}.ics"
             
             # Create attachment
             calendar_attachment = MIMEBase('text', 'calendar')
@@ -197,17 +243,17 @@ def send_email_with_calendar(recipient_email, subject, body, shift_data, is_for_
         # Fallback to regular email
         return send_email(recipient_email, subject, body)
 
-def save_shift_request(details: dict, project_id: str):
-    """Saves shift request details to Supabase and returns the new request's ID."""
+def save_shift_request(details: ShiftRequest, project_id: str) -> Optional[str]:
+    """Save shift request details to Supabase and return the new request ID."""
     if not supabase:
         st.error("Cliente Supabase no inicializado. No se puede guardar la solicitud.")
         return None
     try:
-        # Ensure date_request is string. Streamlit date_input gives datetime.date
-        if 'date_request' in details and isinstance(details['date_request'], (datetime, uuid.UUID, date)): # Use imported date type
-             details['date_request'] = str(details['date_request'])
+        record = asdict(details)
+        if record.get("date_request") is not None:
+            record["date_request"] = str(record["date_request"])
 
-        response = supabase.table('shift_requests').insert(details).execute()
+        response = supabase.table("shift_requests").insert(record).execute()
         if response.data and len(response.data) > 0:
             new_id = response.data[0]['id']
             print(f"Shift request saved with ID: {new_id}")
@@ -251,59 +297,81 @@ def update_shift_request_status(request_id: str, updates: dict, project_id: str)
         st.error(f"Excepción al actualizar solicitud: {e}")
         return False
 
-def get_pending_requests(project_id: str):
-    """Fetches all shift requests with supervisor_status = 'pending'."""
+def get_pending_requests(project_id: str) -> List[ShiftRequest]:
+    """Fetch all shift requests with supervisor_status = 'pending'."""
     if not supabase:
         st.error("Cliente Supabase no inicializado. No se pueden obtener las solicitudes pendientes.")
         return []
     try:
         # No ordenamos aquí ya que lo haremos más precisamente en el frontend
-        response = supabase.table('shift_requests').select('*').eq('supervisor_status', 'pending').execute()
-        return response.data if response.data else []
+        response = (
+            supabase.table("shift_requests")
+            .select("*")
+            .eq("supervisor_status", "pending")
+            .execute()
+        )
+        if response.data:
+            return [_shift_request_from_dict(item) for item in response.data]
+        return []
     except Exception as e:
         print(f"Exception fetching pending requests: {e}")
         st.error(f"Excepción al obtener solicitudes pendientes: {e}")
         return []
 
-def get_shift_request_details(request_id: str, project_id: str):
-    """Fetches details for a specific shift request."""
+def get_shift_request_details(request_id: str, project_id: str) -> Optional[ShiftRequest]:
+    """Fetch details for a specific shift request."""
     if not supabase:
         st.error("Cliente Supabase no inicializado. No se pueden obtener los detalles.")
         return None
     try:
-        response = supabase.table('shift_requests').select('*').eq('id', request_id).single().execute()
-        return response.data if response.data else None
+        response = (
+            supabase.table("shift_requests")
+            .select("*")
+            .eq("id", request_id)
+            .single()
+            .execute()
+        )
+        if response.data:
+            return _shift_request_from_dict(response.data)
+        return None
     except Exception as e:
         print(f"Exception fetching shift request details for {request_id}: {e}")
         st.error(f"Excepción al obtener detalles de solicitud: {e}")
         return None
 
-def get_all_shift_requests(project_id: str):
-    """Fetches all shift requests from the database."""
+def get_all_shift_requests(project_id: str) -> List[ShiftRequest]:
+    """Fetch all shift requests from the database."""
     if not supabase:
         st.error("Cliente Supabase no inicializado. No se pueden obtener todas las solicitudes.")
         return []
     try:
         # No aplicamos ordenamiento en la consulta para hacer el sorting en el frontend con más control
-        response = supabase.table('shift_requests').select('*').execute()
-        return response.data if response.data else []
+        response = supabase.table("shift_requests").select("*").execute()
+        if response.data:
+            return [_shift_request_from_dict(item) for item in response.data]
+        return []
     except Exception as e:
         print(f"Exception fetching all shift requests: {e}")
         st.error(f"Excepción al obtener todas las solicitudes: {e}")
         return []
 
 # Employee management functions
-def get_all_employees(project_id: str):
+def get_all_employees(project_id: str) -> List[Employee]:
     """Get all active employees from the database."""
     if not supabase:
         st.error("Cliente Supabase no inicializado.")
         return []
     
     try:
-        response = supabase.table('employees').select('*').eq('is_active', True).order('full_name').execute()
-        
+        response = (
+            supabase.table("employees")
+            .select("*")
+            .eq("is_active", True)
+            .order("full_name")
+            .execute()
+        )
         if response.data:
-            return response.data
+            return [_employee_from_dict(emp) for emp in response.data]
         else:
             print("No employees found or error in response.")
             return []
@@ -313,17 +381,23 @@ def get_all_employees(project_id: str):
         st.error(f"Error al obtener la lista de empleados: {e}")
         return []
 
-def get_employee_by_name(full_name: str, project_id: str):
+def get_employee_by_name(full_name: str, project_id: str) -> Optional[Employee]:
     """Get employee details by full name."""
     if not supabase:
         st.error("Cliente Supabase no inicializado.")
         return None
     
     try:
-        response = supabase.table('employees').select('*').eq('full_name', full_name).eq('is_active', True).execute()
-        
+        response = (
+            supabase.table("employees")
+            .select("*")
+            .eq("full_name", full_name)
+            .eq("is_active", True)
+            .execute()
+        )
+
         if response.data and len(response.data) > 0:
-            return response.data[0]
+            return _employee_from_dict(response.data[0])
         else:
             return None
             
@@ -332,17 +406,23 @@ def get_employee_by_name(full_name: str, project_id: str):
         st.error(f"Error al obtener datos del empleado {full_name}: {e}")
         return None
 
-def get_employee_by_email(email: str, project_id: str):
+def get_employee_by_email(email: str, project_id: str) -> Optional[Employee]:
     """Get employee details by email."""
     if not supabase:
         st.error("Cliente Supabase no inicializado.")
         return None
     
     try:
-        response = supabase.table('employees').select('*').eq('email', email).eq('is_active', True).execute()
-        
+        response = (
+            supabase.table("employees")
+            .select("*")
+            .eq("email", email)
+            .eq("is_active", True)
+            .execute()
+        )
+
         if response.data and len(response.data) > 0:
-            return response.data[0]
+            return _employee_from_dict(response.data[0])
         else:
             return None
             
@@ -351,7 +431,7 @@ def get_employee_by_email(email: str, project_id: str):
         st.error(f"Error al obtener datos del empleado por email {email}: {e}")
         return None
 
-def check_employee_exists(full_name: str = None, email: str = None, project_id: str = None):
+def check_employee_exists(full_name: Optional[str] = None, email: Optional[str] = None, project_id: Optional[str] = None):
     """Check if an employee with the given name or email already exists."""
     if not supabase:
         return False
@@ -473,17 +553,23 @@ def reactivate_employee(employee_id: int, project_id: str):
         st.error(f"Error al reactivar empleado: {e}")
         return False
 
-def get_inactive_employees(project_id: str):
+def get_inactive_employees(project_id: str) -> List[Employee]:
     """Get all inactive employees from the database."""
     if not supabase:
         st.error("Cliente Supabase no inicializado.")
         return []
     
     try:
-        response = supabase.table('employees').select('*').eq('is_active', False).order('full_name').execute()
-        
+        response = (
+            supabase.table("employees")
+            .select("*")
+            .eq("is_active", False)
+            .order("full_name")
+            .execute()
+        )
+
         if response.data:
-            return response.data
+            return [_employee_from_dict(emp) for emp in response.data]
         else:
             print("No inactive employees found or error in response.")
             return []
@@ -532,12 +618,12 @@ def format_date(date_str):
         print(f"Error al formatear la fecha {date_str}: {e}")
         return str(date_str)  # Devolver la cadena original en caso de error
 
-def create_calendar_file(shift_data, is_for_requester=True):
+def create_calendar_file(shift_data: ShiftRequest, is_for_requester: bool = True) -> Optional[str]:
     """
     Creates an .ics calendar file for a shift change.
     
     Args:
-        shift_data: Dictionary containing shift information (from shift_requests table)
+        shift_data: ``ShiftRequest`` instance with shift information
         is_for_requester: Boolean, True if calendar is for the person requesting the shift change
     
     Returns:
@@ -545,16 +631,14 @@ def create_calendar_file(shift_data, is_for_requester=True):
     """
     try:
         # Parse the shift date from shift_data
-        shift_date_str = shift_data.get('date_request', shift_data.get('date'))
+        shift_date_str = shift_data.date_request
         if isinstance(shift_date_str, str):
             shift_date = datetime.fromisoformat(shift_date_str.replace('Z', '+00:00')).date()
-        elif isinstance(shift_date_str, date):
-            shift_date = shift_date_str
         else:
             shift_date = datetime.now().date()
         
         # Extract flight information
-        flight_info = shift_data.get('flight_number', 'Vuelo no especificado')
+        flight_info = shift_data.flight_number or 'Vuelo no especificado'
         
         # Get flight schedule details using the helper function
         schedule_info = get_flight_schedule_info(flight_info)
@@ -592,7 +676,7 @@ def create_calendar_file(shift_data, is_for_requester=True):
         dtstamp = format_datetime_for_ical(now_utc)
         
         # Generate unique ID
-        event_uid = f"shift-change-{shift_data.get('id', uuid.uuid4())}"
+        event_uid = f"shift-change-{shift_data.id or uuid.uuid4()}"
         
         # Determine event title and description based on who the calendar is for
         flight_schedule_display = schedule_info['display_schedule']
@@ -600,12 +684,16 @@ def create_calendar_file(shift_data, is_for_requester=True):
         if is_for_requester:
             # For the person who requested the change - they are GIVING UP this shift
             summary = f"TURNO CEDIDO: {flight_info} ({flight_schedule_display})"
-            description = f"Turno cedido - Intercambio aprobado\\nVuelo: {flight_info}\\nHorario: {flight_schedule_display}\\nCubierto por: {shift_data.get('cover_name', 'N/A')}\\nSupervisor: {shift_data.get('supervisor_name', 'N/A')}"
+            description = (
+                f"Turno cedido - Intercambio aprobado\\nVuelo: {flight_info}\\nHorario: {flight_schedule_display}\\nCubierto por: {shift_data.cover_name or 'N/A'}\\nSupervisor: {shift_data.supervisor_name or 'N/A'}"
+            )
             status = "CANCELLED"
         else:
             # For the person covering the shift - they are TAKING this shift
             summary = f"TURNO ACEPTADO: {flight_info} ({flight_schedule_display})"
-            description = f"Turno aceptado por intercambio\\nVuelo: {flight_info}\\nHorario: {flight_schedule_display}\\nSolicitante original: {shift_data.get('requester_name', 'N/A')}\\nSupervisor: {shift_data.get('supervisor_name', 'N/A')}"
+            description = (
+                f"Turno aceptado por intercambio\\nVuelo: {flight_info}\\nHorario: {flight_schedule_display}\\nSolicitante original: {shift_data.requester_name or 'N/A'}\\nSupervisor: {shift_data.supervisor_name or 'N/A'}"
+            )
             status = "CONFIRMED"
         
         # Create iCal content with single event
@@ -635,12 +723,16 @@ END:VCALENDAR"""
         print(f"Error creating calendar file: {e}")
         return None
 
-def save_calendar_file(shift_data, is_for_requester=True, filename_prefix="shift_change"):
+def save_calendar_file(
+    shift_data: ShiftRequest,
+    is_for_requester: bool = True,
+    filename_prefix: str = "shift_change",
+) -> tuple[Optional[str], Optional[str]]:
     """
     Creates and saves a calendar file to a temporary location.
     
     Args:
-        shift_data: Dictionary containing shift information
+        shift_data: ``ShiftRequest`` instance containing shift information
         is_for_requester: Boolean, True if calendar is for the person requesting the shift change
         filename_prefix: String prefix for the filename
     

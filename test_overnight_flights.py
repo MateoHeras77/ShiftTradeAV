@@ -29,53 +29,54 @@ class MockStreamlit:
         print(f"ST ERROR: {msg}")
 
 # Replace streamlit import for testing
-sys.modules['streamlit'] = MockStreamlit()
+sys.modules['streamlit'] = MockStreamlit()  # type: ignore[assignment]
 
 import utils
+from models import ShiftRequest
 
 def test_overnight_flights():
     """Test overnight flight calendar generation"""
     print("Testing overnight flight calendar generation...")
     
     # Test data for AV205 (overnight flight)
-    test_shift_data_av205 = {
-        'id': 'test_123',
-        'flight_number': 'AV205',
-        'date_request': '2025-06-01',  # June 1st, 2025
-        'requester_name': 'Juan Pérez',
-        'cover_name': 'María García',
-        'supervisor_name': 'Carlos Supervisor'
-    }
+    test_shift_data_av205 = ShiftRequest(
+        id='test_123',
+        flight_number='AV205',
+        date_request='2025-06-01',
+        requester_name='Juan Pérez',
+        cover_name='María García',
+        supervisor_name='Carlos Supervisor'
+    )
     
     # Test data for AV625 (overnight flight)
-    test_shift_data_av625 = {
-        'id': 'test_456',
-        'flight_number': 'AV625',
-        'date_request': '2025-06-02',  # June 2nd, 2025
-        'requester_name': 'Ana López',
-        'cover_name': 'Pedro Martín',
-        'supervisor_name': 'Laura Supervisor'
-    }
+    test_shift_data_av625 = ShiftRequest(
+        id='test_456',
+        flight_number='AV625',
+        date_request='2025-06-02',
+        requester_name='Ana López',
+        cover_name='Pedro Martín',
+        supervisor_name='Laura Supervisor'
+    )
     
     # Test data for AV255 (regular daytime flight for comparison)
-    test_shift_data_av255 = {
-        'id': 'test_789',
-        'flight_number': 'AV255',
-        'date_request': '2025-06-03',  # June 3rd, 2025
-        'requester_name': 'Roberto Silva',
-        'cover_name': 'Carmen Torres',
-        'supervisor_name': 'Miguel Supervisor'
-    }
+    test_shift_data_av255 = ShiftRequest(
+        id='test_789',
+        flight_number='AV255',
+        date_request='2025-06-03',
+        requester_name='Roberto Silva',
+        cover_name='Carmen Torres',
+        supervisor_name='Miguel Supervisor'
+    )
 
     # Test data for AV627-AV205 (combo overnight)
-    test_shift_data_combo = {
-        'id': 'test_999',
-        'flight_number': 'AV627-AV205',
-        'date_request': '2025-06-04',  # June 4th, 2025
-        'requester_name': 'Luis Gómez',
-        'cover_name': 'Mario Díaz',
-        'supervisor_name': 'Julia Supervisor'
-    }
+    test_shift_data_combo = ShiftRequest(
+        id='test_999',
+        flight_number='AV627-AV205',
+        date_request='2025-06-04',
+        requester_name='Luis Gómez',
+        cover_name='Mario Díaz',
+        supervisor_name='Julia Supervisor'
+    )
     
     print("\n1. Testing flight schedule info function:")
     

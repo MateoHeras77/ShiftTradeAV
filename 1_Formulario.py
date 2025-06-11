@@ -2,6 +2,7 @@ import streamlit as st
 from datetime import datetime, timedelta
 import re
 import utils  # Your utility functions for Supabase, tokens, and email
+from models import Employee, ShiftRequest, Token
 
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx"  # Replace with your actual Supabase project ID
@@ -23,7 +24,7 @@ if "employees_data" not in st.session_state:
     with st.spinner("Cargando lista de empleados..."):
         st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
 
-employees = st.session_state.employees_data
+employees: list[Employee] = st.session_state.employees_data
 
 # Check if there are employees in the database
 if not employees:
@@ -31,7 +32,7 @@ if not employees:
     st.info("💡 Contacta al administrador para que agregue empleados al sistema.")
     st.stop()
 
-employee_names = ["Seleccionar empleado..."] + [emp["full_name"] for emp in employees]
+employee_names = ["Seleccionar empleado..."] + [emp.full_name for emp in employees]
 
 # RAIC color options
 raic_options = ["Morado", "Amarillo", "Verde"]
@@ -87,27 +88,27 @@ selected_requester = st.selectbox(
 # Auto-fill fields for requester
 if selected_requester != "Seleccionar empleado...":
     requester_employee = next(
-        (emp for emp in employees if emp["full_name"] == selected_requester), None
+        (emp for emp in employees if emp.full_name == selected_requester), None
     )
     if requester_employee:
         st.session_state.requester_data = requester_employee
         requester_name = st.text_input(
             "Nombre del solicitante",
-            value=requester_employee["full_name"],
+            value=requester_employee.full_name,
             disabled=True,
         )
         requester_employee_number = st.selectbox(
             "Color del RAIC (Solicitante)",
             raic_options,
             index=(
-                raic_options.index(requester_employee["raic_color"])
-                if requester_employee["raic_color"] in raic_options
+                raic_options.index(requester_employee.raic_color)
+                if requester_employee.raic_color in raic_options
                 else 0
             ),
             disabled=True,
         )
         requester_email = st.text_input(
-            "Email del solicitante", value=requester_employee["email"], disabled=True
+            "Email del solicitante", value=requester_employee.email, disabled=True
         )
     else:
         requester_name = st.text_input("Nombre del solicitante")
@@ -151,28 +152,28 @@ if (
 # Auto-fill fields for cover employee
 if selected_cover != "Seleccionar empleado...":
     cover_employee = next(
-        (emp for emp in employees if emp["full_name"] == selected_cover), None
+        (emp for emp in employees if emp.full_name == selected_cover), None
     )
     if cover_employee:
         st.session_state.cover_data = cover_employee
         cover_name = st.text_input(
             "Nombre del compañero que cubrirá",
-            value=cover_employee["full_name"],
+            value=cover_employee.full_name,
             disabled=True,
         )
         cover_employee_number = st.selectbox(
             "Color del RAIC (Cubridor)",
             raic_options,
             index=(
-                raic_options.index(cover_employee["raic_color"])
-                if cover_employee["raic_color"] in raic_options
+                raic_options.index(cover_employee.raic_color)
+                if cover_employee.raic_color in raic_options
                 else 0
             ),
             disabled=True,
         )
         cover_email = st.text_input(
             "Email del compañero que cubrirá",
-            value=cover_employee["email"],
+            value=cover_employee.email,
             disabled=True,
         )
     else:
@@ -249,19 +250,17 @@ if submit_button:
         st.error("Un RAIC verde solo puede cubrir a otro verde.")
     else:
         with st.spinner("Procesando la solicitud..."):
-            request_details = {
-                "date_request": str(
-                    date_request_input
-                ),  # Ensure it's a string for Supabase if not handled by client
-                "flight_number": flight_number,
-                "requester_name": requester_name,
-                "requester_employee_number": requester_employee_number,
-                "requester_email": requester_email,
-                "cover_name": cover_name,
-                "cover_employee_number": cover_employee_number,
-                "cover_email": cover_email,
-                "supervisor_status": "pending",  # Initial status
-            }
+            request_details = ShiftRequest(
+                date_request=str(date_request_input),
+                flight_number=flight_number,
+                requester_name=requester_name,
+                requester_employee_number=requester_employee_number,
+                requester_email=requester_email,
+                cover_name=cover_name,
+                cover_employee_number=cover_employee_number,
+                cover_email=cover_email,
+                supervisor_status="pending",
+            )
 
             # 1. Save data to Supabase (shift_requests table)
             progress_bar = st.progress(0)
@@ -272,13 +271,13 @@ if submit_button:
             if shift_request_id:
                 st.caption("Generando token de aceptación...")
                 # 2. Generate a UUID token
-                token = utils.generate_token(shift_request_id, PROJECT_ID)
+                token_obj = utils.generate_token(shift_request_id, PROJECT_ID)
                 progress_bar.progress(66)
 
-                if token:
+                if token_obj:
                     # 3. Create a unique link with the token for Streamlit Cloud
                     accept_url = (
-                        f"https://shifttrade.streamlit.app/Solicitud?token={token}"
+                        f"https://shifttrade.streamlit.app/Solicitud?token={token_obj.token}"
                     )
 
                     # 4. Send the link by email to the covering employee

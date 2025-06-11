@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd  # Import pandas for DataFrame
 from datetime import datetime
 import utils  # Your utility functions
+from dataclasses import asdict
 
 
 def render_pending_request(req):
@@ -338,9 +339,9 @@ if st.session_state.view_mode == "pending_requests":
     # 1. Display a list of all requests with `supervisor_status = 'pending'`
     if "pending_requests_data" not in st.session_state:
         with st.spinner("Cargando solicitudes pendientes..."):
-            st.session_state.pending_requests_data = utils.get_pending_requests(
-                PROJECT_ID
-            )
+            st.session_state.pending_requests_data = [
+                asdict(r) for r in utils.get_pending_requests(PROJECT_ID)
+            ]
 
     pending_requests = st.session_state.pending_requests_data
 
@@ -401,9 +402,9 @@ elif st.session_state.view_mode == "history_view":
     # Fetch all requests (not just pending) for history, cache in session state
     if "all_requests_for_history" not in st.session_state:
         with st.spinner("Cargando historial de solicitudes..."):
-            st.session_state.all_requests_for_history = utils.get_all_shift_requests(
-                PROJECT_ID
-            )
+            st.session_state.all_requests_for_history = [
+                asdict(r) for r in utils.get_all_shift_requests(PROJECT_ID)
+            ]
 
     all_requests_for_history = st.session_state.all_requests_for_history
 

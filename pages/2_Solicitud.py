@@ -1,5 +1,6 @@
 import streamlit as st
 from datetime import datetime
+from models import ShiftRequest, Token
 
 try:
     import utils # Your utility functions
@@ -36,35 +37,40 @@ if not token:
     st.stop()
 
 with st.spinner("Validando token..."):
-    # 1. Validate the token
-    shift_request_id = utils.verify_token(str(token), PROJECT_ID) # Ensure token is string
+    token_obj = utils.verify_token(str(token), PROJECT_ID)
+    shift_request_id = token_obj.shift_request_id if token_obj else None
 
 if not shift_request_id:
     st.error("El token es inválido, ha expirado o ya ha sido utilizado.")
     st.image("https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExbjV0ZzNocG9jM3hpYjB4Yms4YmY5N3V2eHdyM2N5Y2NnbnZtY2NqZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/jB57hZPa2mX5B9B22N/giphy.gif", caption="Token Inválido")
     st.stop()
+else:
+    assert token_obj is not None
+    assert shift_request_id is not None
+    sr_id: str = shift_request_id
+    token_valid: Token = token_obj
 
 st.info(f"Token válido. Estás a punto de aceptar cubrir un turno.")
-st.write(f"ID de la solicitud de cambio: {shift_request_id}") # For debugging or info
+st.write(f"ID de la solicitud de cambio: {sr_id}")  # For debugging or info
 
 # Fetch shift request details to show some info (optional but good UX)
 with st.spinner("Cargando detalles del turno..."):
-    request_details = utils.get_shift_request_details(shift_request_id, PROJECT_ID)
+    request_details = utils.get_shift_request_details(sr_id, PROJECT_ID)
 if request_details:
     st.markdown(f"""
     **Detalles del Turno a Cubrir:**
-    - **Fecha del Turno a Cambiar:** {utils.format_date(request_details.get('date_request', 'N/A'))}
-    - **Vuelo:** {request_details.get('flight_number', 'N/A')}
+    - **Fecha del Turno a Cambiar:** {utils.format_date(request_details.date_request)}
+    - **Vuelo:** {request_details.flight_number}
     
     **Información del Solicitante:**
-    - **Nombre:** {request_details.get('requester_name', 'N/A')}
-    - **Color del RAIC (Solicitante):** {request_details.get('requester_employee_number', 'N/A')}
-    - **Email:** {request_details.get('requester_email', 'N/A')}
+    - **Nombre:** {request_details.requester_name}
+    - **Color del RAIC (Solicitante):** {request_details.requester_employee_number}
+    - **Email:** {request_details.requester_email}
 
     **Confirmación de Tus Datos (Quien Cubre):**
-    - **Nombre:** {request_details.get('cover_name', 'N/A')}
-    - **Color del RAIC (Cubridor):** {request_details.get('cover_employee_number', 'N/A')}
-    - **Email:** {request_details.get('cover_email', 'N/A')}
+    - **Nombre:** {request_details.cover_name}
+    - **Color del RAIC (Cubridor):** {request_details.cover_employee_number}
+    - **Email:** {request_details.cover_email}
     """)
 else:
     st.warning("No se pudieron cargar los detalles completos de la solicitud.")
@@ -78,7 +84,7 @@ if st.button("✅ Aceptar Cambio de Turno"):
         st.caption("Actualizando estado de la solicitud...")
         now_utc = datetime.utcnow()
         update_success = utils.update_shift_request_status(
-            shift_request_id,
+            sr_id,
             {
                 "date_accepted_by_cover": now_utc.isoformat()
             },
@@ -87,22 +93,22 @@ if st.button("✅ Aceptar Cambio de Turno"):
         progress_bar.progress(33)
         
         st.caption("Marcando token como utilizado...")
-        token_marked = utils.mark_token_as_used(str(token), PROJECT_ID)
+        token_marked = utils.mark_token_as_used(token_valid, PROJECT_ID)
         progress_bar.progress(50)
 
         if update_success and token_marked:
             # Re-fetch details to get emails for confirmation
             st.caption("Preparando correos de confirmación...")
-            updated_request_details = utils.get_shift_request_details(shift_request_id, PROJECT_ID)
+            updated_request_details = utils.get_shift_request_details(sr_id, PROJECT_ID)
             progress_bar.progress(66)
-            
+
             if updated_request_details:
-                requester_email = updated_request_details.get('requester_email')
-                cover_email = updated_request_details.get('cover_email') # Your email
-                requester_name = updated_request_details.get('requester_name')
-                cover_name = updated_request_details.get('cover_name')
-                flight_number = updated_request_details.get('flight_number')
-                date_request = updated_request_details.get('date_request')
+                requester_email = updated_request_details.requester_email
+                cover_email = updated_request_details.cover_email
+                requester_name = updated_request_details.requester_name
+                cover_name = updated_request_details.cover_name
+                flight_number = updated_request_details.flight_number
+                date_request = updated_request_details.date_request
 
                 # 3. Send confirmation emails
                 st.caption("Enviando correos de confirmación...")

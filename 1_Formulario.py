@@ -1,7 +1,7 @@
 import streamlit as st
 from datetime import datetime, timedelta
 import re
-import utils  # Your utility functions for Supabase, tokens, and email
+from shifttrade import utils  # Utility functions for Supabase, tokens, and email
 
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx"  # Replace with your actual Supabase project ID

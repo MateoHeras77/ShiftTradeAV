@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd  # Import pandas for DataFrame
 from datetime import datetime
-import utils  # Your utility functions
+from shifttrade import utils  # Utility functions
 
 
 def render_pending_request(req):

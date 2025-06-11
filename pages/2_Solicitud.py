@@ -2,7 +2,10 @@ import streamlit as st
 from datetime import datetime
 
 try:
-    import utils # Your utility functions
+    import utils
+    import supabase_client
+    import token_utils
+    import email_utils
 except st.errors.StreamlitSecretNotFoundError as e:
     st.error(
         "CRITICAL ERROR: Could not load application secrets required by 'utils.py'.\n"
@@ -37,7 +40,7 @@ if not token:
 
 with st.spinner("Validando token..."):
     # 1. Validate the token
-    shift_request_id = utils.verify_token(str(token), PROJECT_ID) # Ensure token is string
+    shift_request_id = token_utils.verify_token(str(token), PROJECT_ID) # Ensure token is string
 
 if not shift_request_id:
     st.error("El token es inválido, ha expirado o ya ha sido utilizado.")
@@ -49,7 +52,7 @@ st.write(f"ID de la solicitud de cambio: {shift_request_id}") # For debugging or
 
 # Fetch shift request details to show some info (optional but good UX)
 with st.spinner("Cargando detalles del turno..."):
-    request_details = utils.get_shift_request_details(shift_request_id, PROJECT_ID)
+    request_details = supabase_client.get_shift_request_details(shift_request_id, PROJECT_ID)
 if request_details:
     st.markdown(f"""
     **Detalles del Turno a Cubrir:**
@@ -77,7 +80,7 @@ if st.button("✅ Aceptar Cambio de Turno"):
         progress_bar = st.progress(0)
         st.caption("Actualizando estado de la solicitud...")
         now_utc = datetime.utcnow()
-        update_success = utils.update_shift_request_status(
+        update_success = supabase_client.update_shift_request_status(
             shift_request_id,
             {
                 "date_accepted_by_cover": now_utc.isoformat()
@@ -87,13 +90,13 @@ if st.button("✅ Aceptar Cambio de Turno"):
         progress_bar.progress(33)
         
         st.caption("Marcando token como utilizado...")
-        token_marked = utils.mark_token_as_used(str(token), PROJECT_ID)
+        token_marked = token_utils.mark_token_as_used(str(token), PROJECT_ID)
         progress_bar.progress(50)
 
         if update_success and token_marked:
             # Re-fetch details to get emails for confirmation
             st.caption("Preparando correos de confirmación...")
-            updated_request_details = utils.get_shift_request_details(shift_request_id, PROJECT_ID)
+            updated_request_details = supabase_client.get_shift_request_details(shift_request_id, PROJECT_ID)
             progress_bar.progress(66)
             
             if updated_request_details:
@@ -127,7 +130,7 @@ Buenas noticias. {cover_name} ha aceptado cubrir tu turno.
 La solicitud está ahora pendiente de aprobación por el supervisor.
 
 Saludos."""
-                    if not utils.send_email(requester_email, confirmation_subject, requester_body):
+                    if not email_utils.send_email(requester_email, confirmation_subject, requester_body):
                         emails_sent = False
                 progress_bar.progress(83)
 
@@ -146,7 +149,7 @@ Has aceptado cubrir el turno de {requester_name}.
 La solicitud está ahora pendiente de aprobación por el supervisor.
 
 Gracias por tu colaboración."""
-                    if not utils.send_email(cover_email, confirmation_subject, cover_body):
+                    if not email_utils.send_email(cover_email, confirmation_subject, cover_body):
                         emails_sent = False
                 progress_bar.progress(100)
 

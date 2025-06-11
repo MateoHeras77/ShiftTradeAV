@@ -2,7 +2,7 @@ import streamlit as st
 from datetime import datetime
 
 try:
-    import utils # Your utility functions
+    from shifttrade import utils  # Utility functions
 except st.errors.StreamlitSecretNotFoundError as e:
     st.error(
         "CRITICAL ERROR: Could not load application secrets required by 'utils.py'.\n"

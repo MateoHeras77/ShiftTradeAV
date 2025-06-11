@@ -5,6 +5,7 @@ Test script to validate overnight flight calendar generation
 
 import sys
 import os
+import datetime as dt
 from datetime import datetime, date
 
 # Add the current directory to the Python path
@@ -31,7 +32,31 @@ class MockStreamlit:
 # Replace streamlit import for testing
 sys.modules['streamlit'] = MockStreamlit()
 
-import utils
+import types
+supabase_dummy = types.SimpleNamespace(create_client=lambda *args, **kwargs: None, Client=object)
+sys.modules['supabase'] = supabase_dummy
+
+# Provide a minimal pytz replacement for tests
+class DummyTZ(dt.tzinfo):
+    def __init__(self, offset_hours=0):
+        self.offset = dt.timedelta(hours=offset_hours)
+    def utcoffset(self, _dt):
+        return self.offset
+    def dst(self, _dt):
+        return dt.timedelta(0)
+    def tzname(self, _dt):
+        return 'UTC'
+    def localize(self, value):
+        return value.replace(tzinfo=self)
+
+def timezone(_name):
+    # Simplified: return UTC for any timezone
+    return DummyTZ()
+
+pytz_dummy = types.SimpleNamespace(timezone=timezone, UTC=DummyTZ())
+sys.modules['pytz'] = pytz_dummy
+
+from shifttrade import utils
 
 def test_overnight_flights():
     """Test overnight flight calendar generation"""

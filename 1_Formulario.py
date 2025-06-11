@@ -2,6 +2,7 @@ import streamlit as st
 from datetime import datetime, timedelta
 import re
 import utils  # Your utility functions for Supabase, tokens, and email
+from date_utils import get_flight_schedule_info
 
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx"  # Replace with your actual Supabase project ID
@@ -289,7 +290,7 @@ if submit_button:
                     fecha_solicitud = datetime.now().strftime("%d/%m/%Y")
 
                     # Get flight schedule information for email
-                    flight_schedule = utils.get_flight_schedule_info(flight_number)
+                    flight_schedule = get_flight_schedule_info(flight_number)
 
                     email_body = f"""Hola {cover_name},
 

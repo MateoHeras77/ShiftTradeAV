@@ -65,7 +65,7 @@ flight_options = [
     "AV205 (20:00-00:30+1)",  # Overnight flight - arrives next day
     "AV625 (20:00-02:30+1)",  # Overnight flight - arrives next day
     "AV255-AV627 Full Day (5:00-17:30)",
-    "AV619-AV627 Full Day (5:00-17:30)",
+    "AV619-AV627 Full Day (4:00-17:30)",
     "AV627-AV205 Full Day (13:00-00:30+1)",  # Overnight flight - arrives next day
 ]
 

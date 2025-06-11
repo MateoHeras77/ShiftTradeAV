@@ -8,6 +8,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import utils
+import supabase_client
 
 # Project ID (ensure this is consistent, or pass it around/get from a central config)
 PROJECT_ID = "lperiyftrgzchrzvutgx"
@@ -23,7 +24,7 @@ st.title("📜 Historial de Intercambios de Turno")
 # Function to load and prepare data
 def load_data():
     with st.spinner("Cargando historial de solicitudes..."):
-        all_requests = utils.get_all_shift_requests(PROJECT_ID)
+        all_requests = supabase_client.get_all_shift_requests(PROJECT_ID)
     if not all_requests:
         st.warning("No hay solicitudes de intercambio en el historial.")
         return pd.DataFrame()

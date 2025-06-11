@@ -1,34 +1,22 @@
 import streamlit as st
 import smtplib
 import uuid
-from datetime import datetime, timedelta, timezone, date # Import date
+from datetime import datetime, timedelta, timezone, date
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
-from supabase import create_client, Client # Import Supabase client
 import locale
-import pytz  # For timezone handling
+import pytz
 
-# Supabase configuration
-SUPABASE_URL = st.secrets["SUPABASE_URL"]
-SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
-
-# Initialize Supabase client
-try:
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    print("Supabase client initialized successfully.")
-except Exception as e:
-    print(f"Error initializing Supabase client: {e}")
-    st.error(f"Error crítico al conectar con Supabase: {e}")
-    supabase = None # Ensure supabase is None if initialization fails
-
-# Email configuration
-SMTP_SERVER = st.secrets["SMTP_SERVER"]
-SMTP_PORT = int(st.secrets["SMTP_PORT"]) # Ensure SMTP_PORT is an integer
-SMTP_USERNAME = st.secrets["SMTP_USERNAME"]
-SMTP_PASSWORD = st.secrets["SMTP_PASSWORD"]
-SENDER_EMAIL = st.secrets["SENDER_EMAIL"]
+from config import (
+    SMTP_SERVER,
+    SMTP_PORT,
+    SMTP_USERNAME,
+    SMTP_PASSWORD,
+    SENDER_EMAIL,
+)
+from supabase_client import supabase
 
 def generate_token(shift_request_id: str, project_id: str): # project_id is not strictly needed if supabase client is global
     """Generates a unique token, stores it in Supabase, and returns the token."""

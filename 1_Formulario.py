@@ -1,7 +1,10 @@
 import streamlit as st
 from datetime import datetime, timedelta
 import re
-import utils  # Your utility functions for Supabase, tokens, and email
+import utils
+import supabase_client
+import token_utils
+import email_utils
 
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx"  # Replace with your actual Supabase project ID
@@ -21,7 +24,7 @@ st.title("✈️ Formulario de Solicitud de Cambio de Turno")
 # Load employees data for dropdowns
 if "employees_data" not in st.session_state:
     with st.spinner("Cargando lista de empleados..."):
-        st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
+        st.session_state.employees_data = supabase_client.get_all_employees(PROJECT_ID)
 
 employees = st.session_state.employees_data
 
@@ -46,7 +49,7 @@ if "cover_data" not in st.session_state:
 col1, col2 = st.columns([3, 1])
 with col2:
     if st.button("🔄 Actualizar Lista"):
-        st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
+        st.session_state.employees_data = supabase_client.get_all_employees(PROJECT_ID)
         st.rerun()
 
 # Form sections outside of st.form for better reactivity
@@ -266,13 +269,13 @@ if submit_button:
             # 1. Save data to Supabase (shift_requests table)
             progress_bar = st.progress(0)
             st.caption("Guardando solicitud en la base de datos...")
-            shift_request_id = utils.save_shift_request(request_details, PROJECT_ID)
+            shift_request_id = supabase_client.save_shift_request(request_details, PROJECT_ID)
             progress_bar.progress(33)
 
             if shift_request_id:
                 st.caption("Generando token de aceptación...")
                 # 2. Generate a UUID token
-                token = utils.generate_token(shift_request_id, PROJECT_ID)
+                token = token_utils.generate_token(shift_request_id, PROJECT_ID)
                 progress_bar.progress(66)
 
                 if token:
@@ -306,7 +309,7 @@ Para aceptar, por favor haz clic en el siguiente enlace (válido por 24 horas):
 {accept_url}
 
 Gracias."""
-                    email_sent = utils.send_email(
+                    email_sent = email_utils.send_email(
                         cover_email, email_subject, email_body
                     )
                     progress_bar.progress(100)

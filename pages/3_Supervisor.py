@@ -1,7 +1,10 @@
 import streamlit as st
 import pandas as pd  # Import pandas for DataFrame
 from datetime import datetime
-import utils  # Your utility functions
+import utils
+import supabase_client
+import token_utils
+import email_utils
 
 
 def render_pending_request(req):
@@ -76,7 +79,7 @@ def render_pending_request(req):
                         "supervisor_comments": supervisor_comments_val,
                         "supervisor_name": supervisor_name_input_val,
                     }
-                    update_success = utils.update_shift_request_status(
+                    update_success = supabase_client.update_shift_request_status(
                         req_id, updates, PROJECT_ID
                     )
                     progress_bar.progress(50)
@@ -137,14 +140,14 @@ Gracias por tu colaboración. El cambio está oficialmente autorizado.
 
 Saludos,
 ShiftTradeAV"""
-                        email1 = utils.send_email_with_calendar(
+                        email1 = email_utils.send_email_with_calendar(
                             req.get("requester_email"),
                             requester_subject,
                             requester_body,
                             req,
                             is_for_requester=True,
                         )
-                        email2 = utils.send_email_with_calendar(
+                        email2 = email_utils.send_email_with_calendar(
                             req.get("cover_email"),
                             cover_subject,
                             cover_body,
@@ -187,7 +190,7 @@ ShiftTradeAV"""
                         "supervisor_comments": supervisor_comments_val,
                         "supervisor_name": supervisor_name_input_val,
                     }
-                    update_success = utils.update_shift_request_status(
+                    update_success = supabase_client.update_shift_request_status(
                         req_id, updates, PROJECT_ID
                     )
                     progress_bar.progress(50)
@@ -248,12 +251,12 @@ Ya no necesitas cubrir este turno. Gracias por tu disposición.
 
 Saludos,
 ShiftTradeAV"""
-                        email1 = utils.send_email(
+                        email1 = email_utils.send_email(
                             req.get("requester_email"),
                             requester_subject,
                             requester_body,
                         )
-                        email2 = utils.send_email(
+                        email2 = email_utils.send_email(
                             req.get("cover_email"), cover_subject, cover_body
                         )
                         progress_bar.progress(100)
@@ -338,7 +341,7 @@ if st.session_state.view_mode == "pending_requests":
     # 1. Display a list of all requests with `supervisor_status = 'pending'`
     if "pending_requests_data" not in st.session_state:
         with st.spinner("Cargando solicitudes pendientes..."):
-            st.session_state.pending_requests_data = utils.get_pending_requests(
+            st.session_state.pending_requests_data = supabase_client.get_pending_requests(
                 PROJECT_ID
             )
 
@@ -401,7 +404,7 @@ elif st.session_state.view_mode == "history_view":
     # Fetch all requests (not just pending) for history, cache in session state
     if "all_requests_for_history" not in st.session_state:
         with st.spinner("Cargando historial de solicitudes..."):
-            st.session_state.all_requests_for_history = utils.get_all_shift_requests(
+            st.session_state.all_requests_for_history = supabase_client.get_all_shift_requests(
                 PROJECT_ID
             )
 

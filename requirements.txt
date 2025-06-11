@@ -5,3 +5,5 @@ supabase
 pytz
 python-dateutil
 email-validator
+pytest
+pytest-mock

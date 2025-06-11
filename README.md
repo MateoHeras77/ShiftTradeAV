@@ -13,14 +13,16 @@ ShiftTradeAV es una aplicación desarrollada con Streamlit y Supabase que permit
 - Sistema seguro de tokens para aceptación de turnos
 
 ## Estructura
-La aplicación se divide en tres partes principales:
-1. `main.py` - Formulario de solicitud de cambio de turno
-2. `accept.py` - Página para aceptar cubrir un turno
-3. `supervisor.py` - Panel del supervisor para aprobar/rechazar solicitudes
-4. `utils.py` - Funciones compartidas para operaciones con Supabase, emails y tokens
+La aplicación se divide en varias páginas de Streamlit:
+1. `1_Formulario.py` - Formulario de solicitud de cambio de turno
+2. `pages/2_Solicitud.py` - Página para aceptar cubrir un turno
+3. `pages/3_Supervisor.py` - Panel del supervisor para aprobar o rechazar solicitudes
+4. `pages/4_Admin_Empleados.py` - Administración de empleados
+5. `pages/5_Historial.py` - Historial de solicitudes
+6. `utils.py` - Funciones compartidas para operaciones con Supabase, correos y tokens
 
 ## Configuración
-Para usar la aplicación es necesario configurar los secretos en un archivo `.streamlit/secrets.toml` con:
+Crea un directorio `.streamlit` en la raíz del proyecto y dentro coloca un archivo `secrets.toml` con el siguiente contenido:
 ```toml
 SUPABASE_URL = "URL_DE_TU_PROYECTO"
 SUPABASE_KEY = "CLAVE_DE_TU_PROYECTO"
@@ -31,17 +33,36 @@ SMTP_PASSWORD = "CONTRASEÑA_SMTP"
 SENDER_EMAIL = "EMAIL_REMITENTE"
 ```
 
+## Entorno de Desarrollo
+Para aislar las dependencias puedes crear un entorno virtual:
+```bash
+python -m venv .venv
+source .venv/bin/activate  # En Windows usa .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Para ejecutar las pruebas después de instalar las dependencias:
+```bash
+pytest
+```
+
 ## Ejecución
 Para ejecutar las diferentes partes de la aplicación:
 ```bash
 # Formulario de solicitud
-streamlit run main.py --server.port 8501
+streamlit run 1_Formulario.py --server.port 8501
 
-# Página de aceptación 
-streamlit run accept.py --server.port 8502
+# Página para aceptar cubrir un turno
+streamlit run pages/2_Solicitud.py --server.port 8502
 
 # Panel del supervisor
-streamlit run supervisor.py --server.port 8503
+streamlit run pages/3_Supervisor.py --server.port 8503
+
+# Administración de empleados (opcional)
+streamlit run pages/4_Admin_Empleados.py --server.port 8504
+
+# Historial de solicitudes
+streamlit run pages/5_Historial.py --server.port 8505
 ```
 
 ## Seguridad

@@ -241,7 +241,7 @@ if submit_button:
         )
     elif datetime.combine(
         date_request_input, datetime.min.time()
-    ) < datetime.now() + timedelta(days=1):
+    ) < datetime.now() #+ timedelta(days=1):
         st.error(
             "Las solicitudes deben enviarse con al menos 24 horas de anticipación."
         )

@@ -239,12 +239,6 @@ if submit_button:
         st.error(
             "❌ El email del compañero que cubrirá no tiene un formato válido. Por favor, verifica que incluya @ y un dominio válido."
         )
-    elif datetime.combine(
-        date_request_input, datetime.min.time()
-    ) < datetime.now() + timedelta(days=0):
-        st.error(
-            "Las solicitudes deben enviarse con al menos 24 horas de anticipación."
-        )
     elif cover_employee_number == "Verde" and requester_employee_number != "Verde":
         st.error("Un RAIC verde solo puede cubrir a otro verde.")
     else:

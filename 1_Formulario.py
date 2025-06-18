@@ -51,7 +51,7 @@ with col2:
 
 # Form sections outside of st.form for better reactivity
 st.header("Detalles del Turno")
-min_shift_date = datetime.now().date() + timedelta(days=1)
+min_shift_date = datetime.now().date() #+ timedelta(days=1)
 date_request_input = st.date_input(
     "Fecha del turno a Cambiar", value=min_shift_date, min_value=min_shift_date
 )

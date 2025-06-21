@@ -6,7 +6,7 @@ ShiftTradeAV es una aplicación desarrollada con Streamlit y Supabase que permit
 ## Características
 - Sistema de solicitud de cambio de turnos fácil de usar
 - Notificaciones por correo electrónico
-- Panel de aprobación para supervisores
+- Archivos .ics compatibles con Google Calendar e iOS
 - Indicadores de carga para mantener informados a los usuarios
 - Historial completo de solicitudes con filtros
 - Autenticación para supervisores
@@ -19,7 +19,7 @@ La aplicación se divide en varias páginas de Streamlit:
 3. `pages/3_Supervisor.py` - Panel del supervisor para aprobar o rechazar solicitudes
 4. `pages/4_Admin_Empleados.py` - Administración de empleados
 5. `pages/5_Historial.py` - Historial de solicitudes
-6. `utils.py` - Funciones compartidas para operaciones con Supabase, correos y tokens
+6. `utils.py` - Funciones auxiliares para formatear fechas y obtener horarios de vuelos
 
 ## Configuración
 Crea un directorio `.streamlit` en la raíz del proyecto y dentro coloca un archivo `secrets.toml` con el siguiente contenido:

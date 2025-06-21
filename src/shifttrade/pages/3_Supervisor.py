@@ -1,10 +1,10 @@
 import streamlit as st
 import pandas as pd  # Import pandas for DataFrame
 from datetime import datetime
-import utils
-import supabase_client
-import token_utils
-import email_utils
+from shifttrade import utils
+from shifttrade import supabase_client
+from shifttrade import token_utils
+from shifttrade import email_utils
 
 
 def render_pending_request(req):

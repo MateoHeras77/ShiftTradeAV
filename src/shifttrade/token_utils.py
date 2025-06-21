@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 import streamlit as st
 
-from supabase_client import supabase
+from .supabase_client import supabase
 
 
 def generate_token(shift_request_id: str, project_id: str):

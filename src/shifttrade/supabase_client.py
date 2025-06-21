@@ -2,7 +2,7 @@ import streamlit as st
 from datetime import datetime, date, timezone
 from supabase import create_client, Client
 
-from config import SUPABASE_URL, SUPABASE_KEY
+from .config import SUPABASE_URL, SUPABASE_KEY
 
 # Initialize Supabase client once
 try:

@@ -13,13 +13,13 @@ ShiftTradeAV es una aplicación desarrollada con Streamlit y Supabase que permit
 - Sistema seguro de tokens para aceptación de turnos
 
 ## Estructura
-La aplicación se divide en varias páginas de Streamlit:
-1. `1_Formulario.py` - Formulario de solicitud de cambio de turno
-2. `pages/2_Solicitud.py` - Página para aceptar cubrir un turno
-3. `pages/3_Supervisor.py` - Panel del supervisor para aprobar o rechazar solicitudes
-4. `pages/4_Admin_Empleados.py` - Administración de empleados
-5. `pages/5_Historial.py` - Historial de solicitudes
-6. `utils.py` - Funciones auxiliares para formatear fechas y obtener horarios de vuelos
+La aplicación se organiza ahora en el paquete `shifttrade` dentro del directorio `src`:
+1. `1_Formulario.py` - Formulario principal de solicitud de cambio de turno
+2. `src/shifttrade/pages/2_Solicitud.py` - Página para aceptar cubrir un turno
+3. `src/shifttrade/pages/3_Supervisor.py` - Panel del supervisor para aprobar o rechazar solicitudes
+4. `src/shifttrade/pages/4_Admin_Empleados.py` - Administración de empleados
+5. `src/shifttrade/pages/5_Historial.py` - Historial de solicitudes
+6. `src/shifttrade/utils.py` - Funciones auxiliares para formatear fechas y obtener horarios de vuelos
 
 ## Configuración
 Crea un directorio `.streamlit` en la raíz del proyecto y dentro coloca un archivo `secrets.toml` con el siguiente contenido:
@@ -53,16 +53,16 @@ Para ejecutar las diferentes partes de la aplicación:
 streamlit run 1_Formulario.py --server.port 8501
 
 # Página para aceptar cubrir un turno
-streamlit run pages/2_Solicitud.py --server.port 8502
+streamlit run src/shifttrade/pages/2_Solicitud.py --server.port 8502
 
 # Panel del supervisor
-streamlit run pages/3_Supervisor.py --server.port 8503
+streamlit run src/shifttrade/pages/3_Supervisor.py --server.port 8503
 
 # Administración de empleados (opcional)
-streamlit run pages/4_Admin_Empleados.py --server.port 8504
+streamlit run src/shifttrade/pages/4_Admin_Empleados.py --server.port 8504
 
 # Historial de solicitudes
-streamlit run pages/5_Historial.py --server.port 8505
+streamlit run src/shifttrade/pages/5_Historial.py --server.port 8505
 ```
 
 ## Seguridad

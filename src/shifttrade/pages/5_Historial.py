@@ -1,14 +1,8 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, date
-import sys
-import os
-
-# Add the root directory to the Python path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-import utils
-import supabase_client
+from shifttrade import utils
+from shifttrade import supabase_client
 
 # Project ID (ensure this is consistent, or pass it around/get from a central config)
 PROJECT_ID = "lperiyftrgzchrzvutgx"

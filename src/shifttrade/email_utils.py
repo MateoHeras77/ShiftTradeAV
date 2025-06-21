@@ -8,14 +8,14 @@ import uuid
 import pytz
 import streamlit as st
 
-from config import (
+from .config import (
     SMTP_SERVER,
     SMTP_PORT,
     SMTP_USERNAME,
     SMTP_PASSWORD,
     SENDER_EMAIL,
 )
-import utils  # for format_date and flight schedule helper
+from . import utils  # for format_date and flight schedule helper
 
 
 def send_email(recipient_email: str, subject: str, body: str) -> bool:

@@ -1,7 +1,7 @@
 import streamlit as st
 import re
-import utils
-import supabase_client
+from shifttrade import utils
+from shifttrade import supabase_client
 
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx"

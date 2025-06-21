@@ -4,11 +4,7 @@ Test script to validate overnight flight calendar generation
 """
 
 import sys
-import os
 from datetime import datetime, date
-
-# Add the current directory to the Python path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Mock streamlit secrets for testing
 class MockSecrets:
@@ -31,8 +27,8 @@ class MockStreamlit:
 # Replace streamlit import for testing
 sys.modules['streamlit'] = MockStreamlit()
 
-import utils
-import email_utils
+from shifttrade import utils
+from shifttrade import email_utils
 
 def test_overnight_flights():
     """Test overnight flight calendar generation"""

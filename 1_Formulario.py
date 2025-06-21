@@ -1,10 +1,10 @@
 import streamlit as st
 from datetime import datetime, timedelta
 import re
-import utils
-import supabase_client
-import token_utils
-import email_utils
+from shifttrade import utils
+from shifttrade import supabase_client
+from shifttrade import token_utils
+from shifttrade import email_utils
 
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx"  # Replace with your actual Supabase project ID

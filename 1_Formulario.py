@@ -206,12 +206,30 @@ st.caption(
     "⚠️ Verifica cuidadosamente el email - es la única forma de contactar al compañero"
 )
 
+st.header("Confirmaciones Requeridas")
+
+# Checkbox de confirmaciones obligatorias
+confirmations_checked = st.checkbox(
+    """**Confirmo que:**
+    
+1. Yo, junto con mi compañero, tenemos al menos dos días dentro de la semana que solicitamos libres.
+
+2. Acepto los términos y condiciones del sistema de cambio de turnos.""",
+    value=False,
+    key="mandatory_confirmations"
+)
+
+if not confirmations_checked:
+    st.warning("⚠️ Debes confirmar ambos puntos antes de enviar la solicitud")
+
 # Submit button outside of form
 submit_button = st.button("Enviar Solicitud", type="primary")
 
 if submit_button:
     # Validation checks
-    if not all(
+    if not confirmations_checked:
+        st.error("❌ Debes confirmar los términos antes de enviar la solicitud.")
+    elif not all(
         [
             date_request_input,
             flight_number,

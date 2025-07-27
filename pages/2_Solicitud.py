@@ -69,8 +69,23 @@ if request_details:
 else:
     st.warning("No se pudieron cargar los detalles completos de la solicitud.")
 
+st.header("Confirmaciones Requeridas")
 
-if st.button("✅ Aceptar Cambio de Turno"):
+# Checkbox de confirmaciones obligatorias
+confirmations_checked = st.checkbox(
+    """**Confirmo que:**
+    
+1. Yo, junto con mi compañero, tenemos al menos dos días dentro de la semana que solicitamos libres.
+
+2. Acepto los términos y condiciones del sistema de cambio de turnos.""",
+    value=False,
+    key="mandatory_confirmations_accept"
+)
+
+if not confirmations_checked:
+    st.warning("⚠️ Debes confirmar ambos puntos antes de aceptar el cambio de turno")
+
+if st.button("✅ Aceptar Cambio de Turno", disabled=not confirmations_checked):
     with st.spinner("Procesando la aceptación..."):
         # 2. Update `date_accepted_by_cover` in `shift_requests`
         #    Mark token as `used`

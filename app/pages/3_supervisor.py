@@ -9,6 +9,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 import utils  # Utility functions
 
 
+
 def render_pending_request(req):
     """Render a single pending request with approve/reject actions."""
     req_id = req.get("id")

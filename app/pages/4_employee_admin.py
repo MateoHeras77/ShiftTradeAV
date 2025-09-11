@@ -1,5 +1,10 @@
 import streamlit as st
 import re
+import sys
+from pathlib import Path
+
+# Allow running this page directly via Streamlit
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 import utils
 
 # Project ID for Supabase calls
@@ -11,7 +16,7 @@ def validate_email(email):
     return re.match(pattern, email) is not None
 
 st.set_page_config(
-    page_title="Admin Empleados",
+    page_title="Employee Admin",
     page_icon="👥",
     layout="wide"
 )

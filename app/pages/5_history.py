@@ -2,18 +2,17 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, date
 import sys
-import os
+from pathlib import Path
 
-# Add the root directory to the Python path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
+# Allow running this page directly via Streamlit
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 import utils
 
 # Project ID (ensure this is consistent, or pass it around/get from a central config)
 PROJECT_ID = "lperiyftrgzchrzvutgx"
 
 st.set_page_config(
-    page_title="Historial de Cambios",
+    page_title="Shift History",
     page_icon="📜",
     layout="wide"
 )

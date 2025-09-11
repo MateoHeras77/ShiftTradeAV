@@ -1,21 +1,11 @@
 import streamlit as st
 from datetime import datetime
+import sys
+from pathlib import Path
 
-try:
-    import utils # Your utility functions
-except st.errors.StreamlitSecretNotFoundError as e:
-    st.error(
-        "CRITICAL ERROR: Could not load application secrets required by 'utils.py'.\n"
-        "Please ensure that the file '.streamlit/secrets.toml' exists in your project root "
-        "(/Users/mateoheras/Library/CloudStorage/OneDrive-Personal/GitHub/ShiftTradeAV/.streamlit/secrets.toml) "
-        "and contains all necessary secrets (e.g., SUPABASE_URL, SUPABASE_KEY, SMTP details).\n\n"
-        f"Details from Streamlit: {e}"
-    )
-    st.caption("The application cannot continue without these secrets. Please create or correct the secrets.toml file and restart.")
-    st.stop()
-except ImportError as e:
-    st.error(f"Failed to import the 'utils' module. Please ensure 'utils.py' exists in the same directory and is free of errors. Details: {e}")
-    st.stop()
+# Allow running this page directly via Streamlit
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+import utils  # Utility functions
 
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx" # Replace with your actual Supabase project ID

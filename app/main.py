@@ -1,7 +1,14 @@
+"""Shift change request form."""
+
 import streamlit as st
 from datetime import datetime, timedelta
 import re
-import utils  # Your utility functions for Supabase, tokens, and email
+import sys
+from pathlib import Path
+
+# Allow running without installing the package
+sys.path.append(str(Path(__file__).resolve().parent))
+import utils  # Utility functions for Supabase, tokens, and email
 
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx"  # Replace with your actual Supabase project ID
@@ -13,10 +20,10 @@ def validate_email(email):
     return re.match(pattern, email) is not None
 
 
-st.set_page_config(page_title="Solicitar Cambio", page_icon="✈️", layout="centered")
+st.set_page_config(page_title="Shift Change Request", page_icon="✈️", layout="centered")
 
 
-st.title("✈️ Formulario de Solicitud de Cambio de Turno")
+st.title("✈️ Shift Change Request Form")
 
 # Load employees data for dropdowns
 if "employees_data" not in st.session_state:

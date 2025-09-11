@@ -1,56 +1,53 @@
-# ShiftTradeAV - Aplicación de Cambio de Turnos para Avianca
+# ShiftTradeAV - Shift Swap Application for Avianca
 
-## Descripción
-ShiftTradeAV es una aplicación desarrollada con Streamlit y Supabase que permite a los empleados de Avianca solicitar, aceptar y aprobar cambios de turnos de forma eficiente y organizada.
+## Overview
+ShiftTradeAV is a Streamlit application backed by Supabase that allows Avianca employees to request, accept, and approve shift swaps in an organized way.
 
-## Características
-- Sistema de solicitud de cambio de turnos fácil de usar
-- Notificaciones por correo electrónico
-- Panel de aprobación para supervisores
-- Indicadores de carga para mantener informados a los usuarios
-- Historial completo de solicitudes con filtros
-- Autenticación para supervisores
-- Sistema seguro de tokens para aceptación de turnos
+## Features
+- Simple shift change request form
+- Email notifications
+- Supervisor approval dashboard
+- Progress indicators to keep users informed
+- Complete request history with filters
+- Supervisor authentication
+- Secure token system for shift acceptance
 
-## Estructura
-La aplicación se divide en tres partes principales:
-1. `main.py` - Formulario de solicitud de cambio de turno
-2. `accept.py` - Página para aceptar cubrir un turno
-3. `supervisor.py` - Panel del supervisor para aprobar/rechazar solicitudes
-4. `utils.py` - Funciones compartidas para operaciones con Supabase, emails y tokens
+## Project Structure
+```
+app/
+  main.py                # Shift change request form
+  utils.py               # Shared functions for Supabase, email and tokens
+  pages/
+    2_accept.py          # Accept a shift request
+    3_supervisor.py      # Supervisor approval panel
+    4_employee_admin.py  # Employee administration
+    5_history.py         # Request history
+```
 
-## Configuración
-Para usar la aplicación es necesario configurar los secretos en un archivo `.streamlit/secrets.toml` con:
+## Configuration
+Create a `.streamlit/secrets.toml` file with the following content:
 ```toml
-SUPABASE_URL = "URL_DE_TU_PROYECTO"
-SUPABASE_KEY = "CLAVE_DE_TU_PROYECTO"
-SMTP_SERVER = "SERVIDOR_SMTP"
-SMTP_PORT = "PUERTO_SMTP"
-SMTP_USERNAME = "USUARIO_SMTP"
-SMTP_PASSWORD = "CONTRASEÑA_SMTP"
-SENDER_EMAIL = "EMAIL_REMITENTE"
+SUPABASE_URL = "YOUR_PROJECT_URL"
+SUPABASE_KEY = "YOUR_PROJECT_KEY"
+SMTP_SERVER = "SMTP_SERVER"
+SMTP_PORT = "SMTP_PORT"
+SMTP_USERNAME = "SMTP_USERNAME"
+SMTP_PASSWORD = "SMTP_PASSWORD"
+SENDER_EMAIL = "SENDER_EMAIL"
 ```
 
-## Ejecución
-Para ejecutar las diferentes partes de la aplicación:
+## Run the App
 ```bash
-# Formulario de solicitud
-streamlit run main.py --server.port 8501
-
-# Página de aceptación 
-streamlit run accept.py --server.port 8502
-
-# Panel del supervisor
-streamlit run supervisor.py --server.port 8503
+streamlit run app/main.py
 ```
 
-## Seguridad
-- Contraseña para acceso de supervisores
-- Tokens únicos para validar aceptaciones de cambios
-- Caducidad automática de tokens (24 horas)
-- Validación de campos obligatorios
+## Security
+- Password protection for supervisors
+- Unique tokens to validate acceptance links
+- Automatic token expiration (24 hours)
+- Required field validation
 
-## Base de Datos
-La aplicación utiliza Supabase con dos tablas principales:
-1. `shift_requests` - Almacena todas las solicitudes de cambio
-2. `tokens` - Gestiona los tokens generados para aceptación de turnos
+## Database
+ShiftTradeAV uses Supabase with two main tables:
+1. `shift_requests` - stores all swap requests
+2. `tokens` - manages generated tokens for request acceptance

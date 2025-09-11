@@ -7,9 +7,6 @@ import sys
 import os
 from datetime import datetime, date
 
-# Add the current directory to the Python path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
 # Mock streamlit secrets for testing
 class MockSecrets:
     def __getitem__(self, key):
@@ -31,7 +28,8 @@ class MockStreamlit:
 # Replace streamlit import for testing
 sys.modules['streamlit'] = MockStreamlit()
 
-import utils
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from app import utils
 
 def test_overnight_flights():
     """Test overnight flight calendar generation"""

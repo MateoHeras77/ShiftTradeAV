@@ -1,6 +1,6 @@
 import streamlit as st
 import re
-import utils
+from .. import utils
 
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx"
@@ -11,7 +11,7 @@ def validate_email(email):
     return re.match(pattern, email) is not None
 
 st.set_page_config(
-    page_title="Admin Empleados",
+    page_title="Employee Admin",
     page_icon="👥",
     layout="wide"
 )

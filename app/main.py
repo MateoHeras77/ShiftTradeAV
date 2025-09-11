@@ -3,7 +3,13 @@
 import streamlit as st
 from datetime import datetime, timedelta
 import re
-from app import utils  # Utility functions for Supabase, tokens, and email
+import sys
+from pathlib import Path
+
+# Allow running without installing the package
+sys.path.append(str(Path(__file__).resolve().parent))
+import utils  # Utility functions for Supabase, tokens, and email
+
 
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx"  # Replace with your actual Supabase project ID

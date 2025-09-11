@@ -1,7 +1,13 @@
 import streamlit as st
 import pandas as pd  # Import pandas for DataFrame
 from datetime import datetime
-from .. import utils  # Utility functions
+import sys
+from pathlib import Path
+
+# Allow running this page directly via Streamlit
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+import utils  # Utility functions
+
 
 
 def render_pending_request(req):

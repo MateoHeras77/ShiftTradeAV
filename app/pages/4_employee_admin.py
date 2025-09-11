@@ -1,6 +1,12 @@
 import streamlit as st
 import re
-from .. import utils
+import sys
+from pathlib import Path
+
+# Allow running this page directly via Streamlit
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+import utils
+
 
 # Project ID for Supabase calls
 PROJECT_ID = "lperiyftrgzchrzvutgx"

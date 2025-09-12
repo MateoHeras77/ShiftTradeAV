@@ -26,23 +26,23 @@ st.set_page_config(page_title="Shift Change Request", page_icon="✈️", layout
 
 st.title("✈️ Shift Change Request Form")
 
-# Load employees data for dropdowns
 if "employees_data" not in st.session_state:
-    with st.spinner("Cargando lista de empleados..."):
+    with st.spinner("Loading employee list..."):
         st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
 
 employees = st.session_state.employees_data
 
+
 # Check if there are employees in the database
 if not employees:
-    st.warning("⚠️ No se encontraron empleados en la base de datos.")
-    st.info("💡 Contacta al administrador para que agregue empleados al sistema.")
+    st.warning("⚠️ No employees found in the database.")
+    st.info("💡 Contact the administrator to add employees to the system.")
     st.stop()
 
-employee_names = ["Seleccionar empleado..."] + [emp["full_name"] for emp in employees]
+employee_names = ["Select employee..."] + [emp["full_name"] for emp in employees]
 
 # RAIC color options
-raic_options = ["Morado", "Amarillo", "Verde"]
+raic_options = ["Purple", "Yellow", "Green"]
 
 # Initialize session state for form data
 if "requester_data" not in st.session_state:
@@ -53,22 +53,23 @@ if "cover_data" not in st.session_state:
 # Add refresh button for employee list
 col1, col2 = st.columns([3, 1])
 with col2:
-    if st.button("🔄 Actualizar Lista"):
+    if st.button("🔄 Refresh List"):
         st.session_state.employees_data = utils.get_all_employees(PROJECT_ID)
         st.rerun()
 
 # Form sections outside of st.form for better reactivity
-st.header("Detalles del Turno")
-min_shift_date = datetime.now().date() #+ timedelta(days=1)
+st.header("Shift Details")
+min_shift_date = datetime.now().date()
 date_request_input = st.date_input(
-    "Fecha del turno a Cambiar", value=min_shift_date, min_value=min_shift_date
+    "Date of shift to change", value=min_shift_date, min_value=min_shift_date
 )
+
 
 # Flight options with schedules
 flight_options = [
-    "Seleccionar vuelo...",
+    "Select flight...",
     "AV255 (5:00-10:00)",
-    "AV619 (04:00-09:00)",  # NUEVO VUELO
+    "AV619 (04:00-09:00)",  # NEW FLIGHT
     "AV627 (13:00-17:30)",
     "AV205 (20:00-00:30+1)",  # Overnight flight - arrives next day
     "AV625 (20:00-02:30+1)",  # Overnight flight - arrives next day
@@ -77,19 +78,20 @@ flight_options = [
     "AV627-AV205 Full Day (13:00-00:30+1)",  # Overnight flight - arrives next day
 ]
 
-selected_flight = st.selectbox("Número de Vuelo", flight_options)
+selected_flight = st.selectbox("Flight Number", flight_options)
 
 # Extract just the flight number for storage
-if selected_flight != "Seleccionar vuelo...":
+if selected_flight != "Select flight...":
     flight_number = selected_flight.split(" ")[0]  # Extract AV255, AV627, or AV205
 else:
     flight_number = ""
 
-st.header("Empleado que Solicita el Cambio")
+
+st.header("Employee Requesting the Change")
 
 # Dropdown for requester
 selected_requester = st.selectbox(
-    "Seleccionar solicitante", employee_names, key="requester_select"
+    "Select requester", employee_names, key="requester_select"
 )
 
 # Auto-fill fields for requester
@@ -100,12 +102,12 @@ if selected_requester != "Seleccionar empleado...":
     if requester_employee:
         st.session_state.requester_data = requester_employee
         requester_name = st.text_input(
-            "Nombre del solicitante",
+            "Requester name",
             value=requester_employee["full_name"],
             disabled=True,
         )
         requester_employee_number = st.selectbox(
-            "Color del RAIC (Solicitante)",
+            "RAIC color (Requester)",
             raic_options,
             index=(
                 raic_options.index(requester_employee["raic_color"])
@@ -115,45 +117,46 @@ if selected_requester != "Seleccionar empleado...":
             disabled=True,
         )
         requester_email = st.text_input(
-            "Email del solicitante", value=requester_employee["email"], disabled=True
+            "Requester email", value=requester_employee["email"], disabled=True
         )
     else:
-        requester_name = st.text_input("Nombre del solicitante")
+        requester_name = st.text_input("Requester name")
         requester_employee_number = st.selectbox(
-            "Color del RAIC (Solicitante)", ["Seleccionar color..."] + raic_options
+            "RAIC color (Requester)", ["Select color..."] + raic_options
         )
         requester_email = st.text_input(
-            "Email del solicitante", placeholder="ejemplo@empresa.com"
+            "Requester email", placeholder="example@company.com"
         )
 else:
-    requester_name = st.text_input("Nombre del solicitante")
+    requester_name = st.text_input("Requester name")
     requester_employee_number = st.selectbox(
-        "Color del RAIC (Solicitante)", ["Seleccionar color..."] + raic_options
+        "RAIC color (Requester)", ["Select color..."] + raic_options
     )
     requester_email = st.text_input(
-        "Email del solicitante", placeholder="ejemplo@empresa.com"
+        "Requester email", placeholder="example@company.com"
     )
 
 # Option to add manual data if not in dropdown
-if selected_requester == "Seleccionar empleado...":
+if selected_requester == "Select employee...":
     st.caption(
-        "💡 ¿El empleado no está en la lista? Completa manualmente los campos o contacta al administrador para agregarlo al sistema."
+        "💡 Employee not in the list? Fill in the fields manually or contact the administrator to add them to the system."
     )
 
-st.header("Empleado que Cubrirá el Turno")
+
+st.header("Employee Covering the Shift")
 
 # Dropdown for cover employee
 selected_cover = st.selectbox(
-    "Seleccionar compañero que cubrirá", employee_names, key="cover_select"
+    "Select coworker covering", employee_names, key="cover_select"
 )
 
 # Prevent selecting the same person for both roles
 if (
-    selected_requester != "Seleccionar empleado..."
+    selected_requester != "Select employee..."
     and selected_cover == selected_requester
 ):
     st.error(
-        "❌ El solicitante y el compañero que cubrirá no pueden ser la misma persona."
+        "❌ The requester and the coworker covering cannot be the same person."
     )
 
 # Auto-fill fields for cover employee
@@ -164,12 +167,12 @@ if selected_cover != "Seleccionar empleado...":
     if cover_employee:
         st.session_state.cover_data = cover_employee
         cover_name = st.text_input(
-            "Nombre del compañero que cubrirá",
+            "Name of coworker covering",
             value=cover_employee["full_name"],
             disabled=True,
         )
         cover_employee_number = st.selectbox(
-            "Color del RAIC (Cubridor)",
+            "RAIC color (Cover)",
             raic_options,
             index=(
                 raic_options.index(cover_employee["raic_color"])
@@ -179,64 +182,67 @@ if selected_cover != "Seleccionar empleado...":
             disabled=True,
         )
         cover_email = st.text_input(
-            "Email del compañero que cubrirá",
+            "Email of coworker covering",
             value=cover_employee["email"],
             disabled=True,
         )
     else:
-        cover_name = st.text_input("Nombre del compañero que cubrirá")
+        cover_name = st.text_input("Name of coworker covering")
         cover_employee_number = st.selectbox(
-            "Color del RAIC (Cubridor)",
-            ["Seleccionar color..."] + raic_options,
+            "RAIC color (Cover)",
+            ["Select color..."] + raic_options,
             key="manual_cover_color",
         )
         cover_email = st.text_input(
-            "Email del compañero que cubrirá", placeholder="compañero@empresa.com"
+            "Email of coworker covering", placeholder="coworker@company.com"
         )
 else:
-    cover_name = st.text_input("Nombre del compañero que cubrirá")
+    cover_name = st.text_input("Name of coworker covering")
     cover_employee_number = st.selectbox(
-        "Color del RAIC (Cubridor)",
-        ["Seleccionar color..."] + raic_options,
+        "RAIC color (Cover)",
+        ["Select color..."] + raic_options,
         key="manual_cover_color_noemp",
     )
     cover_email = st.text_input(
-        "Email del compañero que cubrirá", placeholder="compañero@empresa.com"
+        "Email of coworker covering", placeholder="coworker@company.com"
     )
 
 # Option to add manual data if not in dropdown
-if selected_cover == "Seleccionar empleado...":
+if selected_cover == "Select employee...":
     st.caption(
-        "💡 ¿El empleado no está en la lista? Completa manualmente los campos o contacta al administrador para agregarlo al sistema."
+        "💡 Employee not in the list? Fill in the fields manually or contact the administrator to add them to the system."
     )
 
 st.caption(
-    "⚠️ Verifica cuidadosamente el email - es la única forma de contactar al compañero"
+    "⚠️ Carefully check the email - it is the only way to contact the coworker."
 )
 
-st.header("Confirmaciones Requeridas")
 
-# Checkbox de confirmaciones obligatorias
+st.header("Required Confirmations")
+
+# Mandatory confirmations checkbox
 confirmations_checked = st.checkbox(
-    """**Confirmo que:**
+    """**I confirm that:**
     
-1. Yo, junto con mi compañero, tenemos al menos dos días dentro de la semana que solicitamos libres.
+1. Both I and my coworker have at least two days off within the week we are requesting.
 
-2. Acepto los términos y condiciones del sistema de cambio de turnos.""",
+2. I accept the terms and conditions of the shift change system.""",
     value=False,
     key="mandatory_confirmations"
 )
 
 if not confirmations_checked:
-    st.warning("⚠️ Debes confirmar ambos puntos antes de enviar la solicitud")
+    st.warning("⚠️ You must confirm both points before submitting the request.")
+
 
 # Submit button outside of form
-submit_button = st.button("Enviar Solicitud", type="primary")
+submit_button = st.button("Submit Request", type="primary")
+
 
 if submit_button:
     # Validation checks
     if not confirmations_checked:
-        st.error("❌ Debes confirmar los términos antes de enviar la solicitud.")
+        st.error("❌ You must confirm the terms before submitting the request.")
     elif not all(
         [
             date_request_input,
@@ -249,26 +255,26 @@ if submit_button:
             cover_email,
         ]
     ):
-        st.error("Por favor, completa todos los campos.")
+        st.error("Please complete all fields.")
     elif (
-        selected_requester != "Seleccionar empleado..."
+        selected_requester != "Select employee..."
         and selected_cover == selected_requester
     ):
         st.error(
-            "❌ El solicitante y el compañero que cubrirá no pueden ser la misma persona."
+            "❌ The requester and the coworker covering cannot be the same person."
         )
     elif not validate_email(requester_email):
         st.error(
-            "❌ El email del solicitante no tiene un formato válido. Por favor, verifica que incluya @ y un dominio válido."
+            "❌ The requester's email is not valid. Please check that it includes @ and a valid domain."
         )
     elif not validate_email(cover_email):
         st.error(
-            "❌ El email del compañero que cubrirá no tiene un formato válido. Por favor, verifica que incluya @ y un dominio válido."
+            "❌ The covering coworker's email is not valid. Please check that it includes @ and a valid domain."
         )
-    elif cover_employee_number == "Verde" and requester_employee_number != "Verde":
-        st.error("Un RAIC verde solo puede cubrir a otro verde.")
+    elif cover_employee_number == "Green" and requester_employee_number != "Green":
+        st.error("A Green RAIC can only cover another Green.")
     else:
-        with st.spinner("Procesando la solicitud..."):
+        with st.spinner("Processing request..."):
             request_details = {
                 "date_request": str(
                     date_request_input
@@ -285,12 +291,12 @@ if submit_button:
 
             # 1. Save data to Supabase (shift_requests table)
             progress_bar = st.progress(0)
-            st.caption("Guardando solicitud en la base de datos...")
+            st.caption("Saving request to the database...")
             shift_request_id = utils.save_shift_request(request_details, PROJECT_ID)
             progress_bar.progress(33)
 
             if shift_request_id:
-                st.caption("Generando token de aceptación...")
+                st.caption("Generating acceptance token...")
                 # 2. Generate a UUID token
                 token = utils.generate_token(shift_request_id, PROJECT_ID)
                 progress_bar.progress(66)
@@ -298,72 +304,72 @@ if submit_button:
                 if token:
                     # 3. Create a unique link with the token for Streamlit Cloud
                     accept_url = (
-                        f"https://shifttrade.streamlit.app/Solicitud?token={token}"
+                        f"https://shifttrade.streamlit.app/Request?token={token}"
                     )
 
                     # 4. Send the link by email to the covering employee
-                    st.caption("Enviando correo electrónico...")
-                    email_subject = "Solicitud de Cobertura de Turno"
+                    st.caption("Sending email...")
+                    email_subject = "Shift Coverage Request"
 
                     # Get current date for the request
-                    fecha_solicitud = datetime.now().strftime("%d/%m/%Y")
+                    request_date = datetime.now().strftime("%d/%m/%Y")
 
                     # Get flight schedule information for email
                     flight_schedule = utils.get_flight_schedule_info(flight_number)
 
-                    email_body = f"""Hola {cover_name},
+                    email_body = f"""Hello {cover_name},
 
-{requester_name} ha solicitado que cubras su turno para el vuelo {flight_number} el {utils.format_date(date_request_input)}.
+{requester_name} has requested that you cover their shift for flight {flight_number} on {utils.format_date(date_request_input)}.
 
-**Detalles de la solicitud:**
-• Fecha de solicitud: {fecha_solicitud}
-• Vuelo: {flight_number}
-• Horario: {flight_schedule['display_schedule']}
-• Fecha del turno: {utils.format_date(date_request_input)}
-• Solicitante: {requester_name}
+**Request details:**
+• Request date: {request_date}
+• Flight: {flight_number}
+• Schedule: {flight_schedule['display_schedule']}
+• Shift date: {utils.format_date(date_request_input)}
+• Requester: {requester_name}
 
-Para aceptar, por favor haz clic en el siguiente enlace (válido por 24 horas):
+To accept, please click the following link (valid for 24 hours):
 {accept_url}
 
-Gracias."""
+Thank you."""
                     email_sent = utils.send_email(
                         cover_email, email_subject, email_body
                     )
                     progress_bar.progress(100)
 
                     if email_sent:
-                        st.success(f"✅ Solicitud enviada con ID: {shift_request_id}")
+                        st.success(f"✅ Request sent with ID: {shift_request_id}")
                         st.info(
-                            f"📧 Se ha enviado un correo a **{cover_email}** con el enlace para aceptar el cambio."
+                            f"📧 An email has been sent to **{cover_email}** with the link to accept the change."
                         )
                         st.info(
-                            "💡 **Nota importante:** Si el compañero no recibe el correo, verifica que:"
+                            "💡 **Important note:** If the coworker does not receive the email, check that:"
                         )
-                        st.write("• El email esté escrito correctamente")
-                        st.write("• Revise su carpeta de spam/correo no deseado")
-                        st.write("• El dominio del email sea válido")
+                        st.write("• The email is written correctly")
+                        st.write("• They check their spam/junk folder")
+                        st.write("• The email domain is valid")
                     else:
-                        st.success(f"✅ Solicitud guardada con ID: {shift_request_id}")
-                        st.error("❌ **Error al enviar el correo de aceptación**")
-                        st.warning("⚠️ **Posibles causas del error:**")
+                        st.success(f"✅ Request saved with ID: {shift_request_id}")
+                        st.error("❌ **Error sending acceptance email**")
+                        st.warning("⚠️ **Possible causes of the error:**")
                         st.write(
-                            "• El email ingresado podría tener un error de digitación"
+                            "• The entered email may have a typo"
                         )
-                        st.write("• El dominio del email no existe")
-                        st.write("• Problemas temporales del servidor de correo")
-                        st.info("🔧 **Soluciones:**")
-                        st.write("• Verifica que el email esté escrito correctamente")
-                        st.write("• Contacta directamente al compañero con el enlace:")
+                        st.write("• The email domain does not exist")
+                        st.write("• Temporary issues with the mail server")
+                        st.info("🔧 **Solutions:**")
+                        st.write("• Check that the email is written correctly")
+                        st.write("• Contact the coworker directly with the link:")
                         st.code(accept_url)
                         st.write(
-                            "• O contacta al administrador para reenviar el correo"
+                            "• Or contact the administrator to resend the email"
                         )
                 else:
                     st.error(
-                        "Error al generar el token de aceptación. La solicitud fue guardada, pero el correo no pudo ser enviado."
+                        "Error generating acceptance token. The request was saved, but the email could not be sent."
                     )
             else:
-                st.error("Error al guardar la solicitud en la base de datos.")
+                st.error("Error saving the request to the database.")
 
 st.markdown("---")
-st.caption("ShiftTradeAV - Gestión de Cambios de Turno")
+st.caption("ShiftTradeAV - Shift Change Management")

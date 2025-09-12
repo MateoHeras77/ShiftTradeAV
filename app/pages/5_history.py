@@ -18,14 +18,14 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("📜 Historial de Intercambios de Turno")
+st.title("📜 Shift Swap History")
 
 # Function to load and prepare data
 def load_data():
-    with st.spinner("Cargando historial de solicitudes..."):
+    with st.spinner("Loading request history..."):
         all_requests = utils.get_all_shift_requests(PROJECT_ID)
     if not all_requests:
-        st.warning("No hay solicitudes de intercambio en el historial.")
+        st.warning("No shift swap requests in history.")
         return pd.DataFrame()
 
     df = pd.DataFrame(all_requests)
@@ -41,7 +41,7 @@ def load_data():
 data_df = load_data()
 
 if not data_df.empty:
-    st.sidebar.header("Filtros")
+    st.sidebar.header("Filters")
 
     # Create a copy for filtering
     filtered_df = data_df.copy()
@@ -51,17 +51,17 @@ if not data_df.empty:
         min_date = filtered_df['date_request'].min()
         max_date = filtered_df['date_request'].max()
 
-        if pd.isna(min_date) or pd.isna(max_date) or min_date > max_date: # Handle cases with no valid dates
-             st.sidebar.warning("No hay fechas válidas para filtrar.")
+        if pd.isna(min_date) or pd.isna(max_date) or min_date > max_date:  # Handle cases with no valid dates
+            st.sidebar.warning("No valid dates to filter.")
         else:
             date_range = st.sidebar.date_input(
-                "Fecha del Turno (Rango)",
+                "Shift Date (Range)",
                 value=(min_date.date() if pd.notna(min_date) else date.today(), max_date.date() if pd.notna(max_date) else date.today()),
                 min_value=min_date.date() if pd.notna(min_date) else None,
                 max_value=max_date.date() if pd.notna(max_date) else None,
                 key="date_filter_historial"
             )
-            if len(date_range) == 2:
+            if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
                 start_date, end_date = date_range
                 # Convert to datetime for comparison
                 filtered_df = filtered_df[
@@ -70,55 +70,55 @@ if not data_df.empty:
                 ]
 
     # 2. Filter by Status
-    status_options = ["Todos"] + filtered_df['supervisor_status'].unique().tolist()
-    selected_status = st.sidebar.selectbox("Estado Supervisor", options=status_options, index=0)
-    if selected_status != "Todos":
+    status_options = ["All"] + filtered_df['supervisor_status'].unique().tolist()
+    selected_status = st.sidebar.selectbox("Supervisor Status", options=status_options, index=0)
+    if selected_status != "All":
         filtered_df = filtered_df[filtered_df['supervisor_status'] == selected_status]
 
     if 'cover_status' in filtered_df.columns:
-        cover_status_options = ["Todos"] + filtered_df['cover_status'].unique().tolist()
-        selected_cover_status = st.sidebar.selectbox("Estado Compañero", options=cover_status_options, index=0)
-        if selected_cover_status != "Todos":
+        cover_status_options = ["All"] + filtered_df['cover_status'].unique().tolist()
+        selected_cover_status = st.sidebar.selectbox("Cover Status", options=cover_status_options, index=0)
+        if selected_cover_status != "All":
             filtered_df = filtered_df[filtered_df['cover_status'] == selected_cover_status]
     else:
-        st.sidebar.text("Filtro 'Estado Compañero' no disponible (sin datos)")
+        st.sidebar.text("Filter 'Cover Status' not available (no data)")
         
     # 3. Filter by Requester Name
     if 'requester_name' in filtered_df.columns:
-        requester_names = ["Todos"] + sorted(filtered_df['requester_name'].astype(str).unique().tolist())
-        selected_requester = st.sidebar.selectbox("Solicitante", options=requester_names, index=0)
-        if selected_requester != "Todos":
+        requester_names = ["All"] + sorted(filtered_df['requester_name'].astype(str).unique().tolist())
+        selected_requester = st.sidebar.selectbox("Requester", options=requester_names, index=0)
+        if selected_requester != "All":
             filtered_df = filtered_df[filtered_df['requester_name'] == selected_requester]
 
     # 4. Filter by Cover Name
     if 'cover_name' in filtered_df.columns:
-        cover_names = ["Todos"] + sorted(filtered_df['cover_name'].astype(str).unique().tolist())
-        selected_cover = st.sidebar.selectbox("Compañero que Cubre", options=cover_names, index=0)
-        if selected_cover != "Todos":
+        cover_names = ["All"] + sorted(filtered_df['cover_name'].astype(str).unique().tolist())
+        selected_cover = st.sidebar.selectbox("Covering Employee", options=cover_names, index=0)
+        if selected_cover != "All":
             filtered_df = filtered_df[filtered_df['cover_name'] == selected_cover]
             
     # 5. Filter by Flight Number
     if 'flight_number' in filtered_df.columns:
-        flight_numbers = ["Todos"] + sorted(filtered_df['flight_number'].astype(str).unique().tolist())
-        selected_flight = st.sidebar.selectbox("Vuelo", options=flight_numbers, index=0)
-        if selected_flight != "Todos":
+        flight_numbers = ["All"] + sorted(filtered_df['flight_number'].astype(str).unique().tolist())
+        selected_flight = st.sidebar.selectbox("Flight", options=flight_numbers, index=0)
+        if selected_flight != "All":
             filtered_df = filtered_df[filtered_df['flight_number'] == selected_flight]
 
-    st.subheader(f"Mostrando {len(filtered_df)} de {len(data_df)} solicitudes")
+    st.subheader(f"Showing {len(filtered_df)} of {len(data_df)} requests")
 
     # Columns to display and their new names
     columns_to_display = {
-        'created_at': 'Fecha Creación Solicitud',
-        'requester_name': 'Solicitante',
-        'cover_name': 'Compañero Cubre',
-        'flight_number': 'Vuelo',
-        'date_request': 'Fecha Turno',
-        'cover_status': 'Estado Compañero',
-        'date_accepted_by_cover': 'Fecha Aceptación Compañero',
-        'supervisor_status': 'Estado Supervisor',
+        'created_at': 'Request Creation Date',
+        'requester_name': 'Requester',
+        'cover_name': 'Covering Employee',
+        'flight_number': 'Flight',
+        'date_request': 'Shift Date',
+        'cover_status': 'Cover Status',
+        'date_accepted_by_cover': 'Cover Acceptance Date',
+        'supervisor_status': 'Supervisor Status',
         'supervisor_name': 'Supervisor',
-        'supervisor_decision_date': 'Fecha Decisión Supervisor',
-        'rejection_reason': 'Motivo Rechazo'
+        'supervisor_decision_date': 'Supervisor Decision Date',
+        'rejection_reason': 'Rejection Reason'
     }
 
     # Filter out columns that might not exist if no requests have reached that stage
@@ -129,13 +129,13 @@ if not data_df.empty:
     # Format date columns for display
     for col_original, col_display in display_df_cols.items():
         if col_original in ['created_at', 'date_request', 'date_accepted_by_cover', 'supervisor_decision_date']:
-            if col_display in display_df.columns: # Check if column exists after rename
-                 display_df[col_display] = pd.to_datetime(display_df[col_display]).dt.strftime('%Y-%m-%d %H:%M')
+          if col_display in display_df.columns: # Check if column exists after rename
+              display_df[col_display] = pd.to_datetime(display_df[col_display]).dt.strftime('%Y-%m-%d %H:%M')
 
 
     st.dataframe(display_df, use_container_width=True)
 
 else:
     if not data_df.empty: # Only show if initial load had data but filters cleared it
-        st.info("No hay solicitudes que coincidan con los filtros seleccionados.")
+        st.info("No requests match the selected filters.")
 

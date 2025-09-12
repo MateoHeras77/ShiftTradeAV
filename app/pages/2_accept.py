@@ -12,76 +12,78 @@ import utils  # Utility functions
 PROJECT_ID = "lperiyftrgzchrzvutgx" # Replace with your actual Supabase project ID
 
 st.set_page_config(
-    page_title="Aceptar Cambio",
+    page_title="Accept Shift Change",
     page_icon="✔️",
     layout="centered"
 )
 
-st.title("✔️ Aceptar Cambio de Turno")
+st.title("✔️ Accept Shift Change")
 
 query_params = st.query_params
 token = query_params.get("token")
 
 if not token:
-    st.error("Token no proporcionado. Por favor, usa el enlace enviado a tu correo.")
+    st.error("Token not provided. Please use the link sent to your email.")
     st.stop()
 
-with st.spinner("Validando token..."):
+with st.spinner("Validating token..."):
     # 1. Validate the token
     shift_request_id = utils.verify_token(str(token), PROJECT_ID) # Ensure token is string
 
 if not shift_request_id:
-    st.error("El token es inválido, ha expirado o ya ha sido utilizado.")
-    st.image("https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExbjV0ZzNocG9jM3hpYjB4Yms4YmY5N3V2eHdyM2N5Y2NnbnZtY2NqZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/jB57hZPa2mX5B9B22N/giphy.gif", caption="Token Inválido")
+    st.error("The token is invalid, expired, or has already been used.")
+    st.image("https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExbjV0ZzNocG9jM3hpYjB4Yms4YmY5N3V2eHdyM2N5Y2NnbnZtY2NqZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/jB57hZPa2mX5B9B22N/giphy.gif", caption="Invalid Token")
     st.stop()
 
-st.info(f"Token válido. Estás a punto de aceptar cubrir un turno.")
-st.write(f"ID de la solicitud de cambio: {shift_request_id}") # For debugging or info
+st.info(f"Valid token. You are about to accept to cover a shift.")
+st.write(f"Shift change request ID: {shift_request_id}") # For debugging or info
 
 # Fetch shift request details to show some info (optional but good UX)
-with st.spinner("Cargando detalles del turno..."):
+with st.spinner("Loading shift details..."):
     request_details = utils.get_shift_request_details(shift_request_id, PROJECT_ID)
 if request_details:
     st.markdown(f"""
-    **Detalles del Turno a Cubrir:**
-    - **Fecha del Turno a Cambiar:** {utils.format_date(request_details.get('date_request', 'N/A'))}
-    - **Vuelo:** {request_details.get('flight_number', 'N/A')}
+    **Shift to Cover Details:**
+    - **Date of Shift to Change:** {utils.format_date(request_details.get('date_request', 'N/A'))}
+    - **Flight:** {request_details.get('flight_number', 'N/A')}
     
-    **Información del Solicitante:**
-    - **Nombre:** {request_details.get('requester_name', 'N/A')}
-    - **Color del RAIC (Solicitante):** {request_details.get('requester_employee_number', 'N/A')}
+    **Requester Information:**
+    - **Name:** {request_details.get('requester_name', 'N/A')}
+    - **RAIC Color (Requester):** {request_details.get('requester_employee_number', 'N/A')}
     - **Email:** {request_details.get('requester_email', 'N/A')}
 
-    **Confirmación de Tus Datos (Quien Cubre):**
-    - **Nombre:** {request_details.get('cover_name', 'N/A')}
-    - **Color del RAIC (Cubridor):** {request_details.get('cover_employee_number', 'N/A')}
+    **Your Information (Cover):**
+    - **Name:** {request_details.get('cover_name', 'N/A')}
+    - **RAIC Color (Cover):** {request_details.get('cover_employee_number', 'N/A')}
     - **Email:** {request_details.get('cover_email', 'N/A')}
     """)
 else:
-    st.warning("No se pudieron cargar los detalles completos de la solicitud.")
+    st.warning("Could not load full request details.")
 
-st.header("Confirmaciones Requeridas")
 
-# Checkbox de confirmaciones obligatorias
+st.header("Required Confirmations")
+
+# Mandatory confirmations checkbox
 confirmations_checked = st.checkbox(
-    """**Confirmo que:**
+    """**I confirm that:**
     
-1. Yo, junto con mi compañero, tenemos al menos dos días dentro de la semana que solicitamos libres.
+1. Both I and my coworker have at least two days off within the week we are requesting.
 
-2. Acepto los términos y condiciones del sistema de cambio de turnos.""",
+2. I accept the terms and conditions of the shift change system.""",
     value=False,
     key="mandatory_confirmations_accept"
 )
 
 if not confirmations_checked:
-    st.warning("⚠️ Debes confirmar ambos puntos antes de aceptar el cambio de turno")
+    st.warning("⚠️ You must confirm both points before accepting the shift change.")
 
-if st.button("✅ Aceptar Cambio de Turno", disabled=not confirmations_checked):
-    with st.spinner("Procesando la aceptación..."):
+
+if st.button("✅ Accept Shift Change", disabled=not confirmations_checked):
+    with st.spinner("Processing acceptance..."):
         # 2. Update `date_accepted_by_cover` in `shift_requests`
         #    Mark token as `used`
         progress_bar = st.progress(0)
-        st.caption("Actualizando estado de la solicitud...")
+        st.caption("Updating request status...")
         now_utc = datetime.utcnow()
         update_success = utils.update_shift_request_status(
             shift_request_id,
@@ -92,13 +94,13 @@ if st.button("✅ Aceptar Cambio de Turno", disabled=not confirmations_checked):
         )
         progress_bar.progress(33)
         
-        st.caption("Marcando token como utilizado...")
+        st.caption("Marking token as used...")
         token_marked = utils.mark_token_as_used(str(token), PROJECT_ID)
         progress_bar.progress(50)
 
         if update_success and token_marked:
             # Re-fetch details to get emails for confirmation
-            st.caption("Preparando correos de confirmación...")
+            st.caption("Preparing confirmation emails...")
             updated_request_details = utils.get_shift_request_details(shift_request_id, PROJECT_ID)
             progress_bar.progress(66)
             
@@ -111,64 +113,64 @@ if st.button("✅ Aceptar Cambio de Turno", disabled=not confirmations_checked):
                 date_request = updated_request_details.get('date_request')
 
                 # 3. Send confirmation emails
-                st.caption("Enviando correos de confirmación...")
-                confirmation_subject = "Confirmación de Cambio de Turno Aceptado"
+                st.caption("Sending confirmation emails...")
+                confirmation_subject = "Shift Change Acceptance Confirmation"
                 emails_sent = True
                 
                 # Get current date for acceptance
-                fecha_aceptacion = datetime.now().strftime("%d/%m/%Y")
+                acceptance_date = datetime.now().strftime("%d/%m/%Y")
                 
                 # Email to requester
                 if requester_email:
-                    requester_body = f"""Hola {requester_name},
+                    requester_body = f"""Hello {requester_name},
 
-Buenas noticias. {cover_name} ha aceptado cubrir tu turno.
+Good news. {cover_name} has accepted to cover your shift.
 
-**Detalles del cambio:**
-• Fecha de aceptación: {fecha_aceptacion}
-• Vuelo: {flight_number}
-• Fecha del turno: {utils.format_date(date_request)}
-• Compañero que cubre: {cover_name}
+**Change details:**
+• Acceptance date: {acceptance_date}
+• Flight: {flight_number}
+• Shift date: {utils.format_date(date_request)}
+• Covering coworker: {cover_name}
 
-La solicitud está ahora pendiente de aprobación por el supervisor.
+The request is now pending supervisor approval.
 
-Saludos."""
+Best regards."""
                     if not utils.send_email(requester_email, confirmation_subject, requester_body):
                         emails_sent = False
                 progress_bar.progress(83)
 
                 # Email to cover (yourself)
                 if cover_email:
-                    cover_body = f"""Hola {cover_name},
+                    cover_body = f"""Hello {cover_name},
 
-Has aceptado cubrir el turno de {requester_name}.
+You have accepted to cover {requester_name}'s shift.
 
-**Detalles del cambio:**
-• Fecha de aceptación: {fecha_aceptacion}
-• Vuelo: {flight_number}
-• Fecha del turno: {utils.format_date(date_request)}
-• Solicitante: {requester_name}
+**Change details:**
+• Acceptance date: {acceptance_date}
+• Flight: {flight_number}
+• Shift date: {utils.format_date(date_request)}
+• Requester: {requester_name}
 
-La solicitud está ahora pendiente de aprobación por el supervisor.
+The request is now pending supervisor approval.
 
-Gracias por tu colaboración."""
+Thank you for your collaboration."""
                     if not utils.send_email(cover_email, confirmation_subject, cover_body):
                         emails_sent = False
                 progress_bar.progress(100)
 
-                st.success("¡Has aceptado cubrir el turno!")
+                st.success("You have accepted to cover the shift!")
                 if emails_sent:
-                    st.info("Se han enviado correos de confirmación a ambas partes.")
+                    st.info("Confirmation emails have been sent to both parties.")
                 else:
-                    st.warning("Se actualizó el estado, pero hubo un problema al enviar algunos correos de confirmación.")
+                    st.warning("Status updated, but there was a problem sending some confirmation emails.")
                 st.balloons()
             else:
-                st.warning("Se actualizó el estado, pero hubo un problema al obtener los detalles para enviar los correos de confirmación.")
+                st.warning("Status updated, but there was a problem retrieving details to send confirmation emails.")
         else:
-            st.error("Hubo un error al procesar tu aceptación. Por favor, inténtalo de nuevo o contacta al administrador.")
+            st.error("There was an error processing your acceptance. Please try again or contact the administrator.")
 
 st.markdown("---")
-st.caption("ShiftTradeAV - Aceptación de Turno")
+st.caption("ShiftTradeAV - Shift Acceptance")
 
 # To run this page, you would typically navigate to:
 # streamlit run accept.py --server.runOnSave true --server.port 8501 (or another port if 8501 is taken)

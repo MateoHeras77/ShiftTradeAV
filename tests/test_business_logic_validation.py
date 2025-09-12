@@ -341,18 +341,26 @@ class TestBusinessLogicValidation(unittest.TestCase):
         
         return flight_number in valid_flights
 
-    def test_token_security_validation(self):
+    @patch('utils.token_utils.get_supabase_client')
+    def test_token_security_validation(self, mock_supabase):
         """Test token security and lifecycle validation."""
         print("🧪 Testing Token Security Validation...")
         
+        # Setup mock supabase client
+        mock_client = Mock()
+        mock_client.table.return_value.insert.return_value.execute.return_value = Mock(
+            data=[{'token': 'test_token_123', 'id': 1}]
+        )
+        mock_supabase.return_value = mock_client
+        
         # Test token generation
-        token = generate_token()
+        token = generate_token("test_request_123", "test_project_456")
         self.assertIsNotNone(token, "Token should be generated")
         self.assertTrue(len(token) > 10, "Token should have sufficient length")
         print(f"   ✅ Token generated: {token[:8]}...")
         
         # Test token uniqueness
-        token2 = generate_token()
+        token2 = generate_token("test_request_124", "test_project_456")
         self.assertNotEqual(token, token2, "Tokens should be unique")
         print("   ✅ Token uniqueness validated")
         

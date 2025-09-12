@@ -24,6 +24,9 @@ class MockStreamlit:
     
     def error(self, msg):
         print(f"ST ERROR: {msg}")
+    
+    def set_page_config(self, **kwargs):
+        pass  # Mock page config
 
 # Replace streamlit import for testing
 sys.modules['streamlit'] = MockStreamlit()

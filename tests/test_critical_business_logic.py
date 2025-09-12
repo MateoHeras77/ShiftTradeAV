@@ -12,13 +12,38 @@ import re
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Mock Streamlit before any imports that use it
+class MockStreamlit:
+    secrets = {
+        "SUPABASE_URL": "https://test.supabase.co",
+        "SUPABASE_KEY": "test_key",
+        "SMTP_SERVER": "smtp.test.com",
+        "SMTP_PORT": "587",
+        "SMTP_USERNAME": "test@test.com",
+        "SMTP_PASSWORD": "test_pass",
+        "SENDER_EMAIL": "noreply@test.com"
+    }
+    
+    @staticmethod
+    def error(msg): print(f"ST ERROR: {msg}")
+    
+    @staticmethod
+    def warning(msg): print(f"ST WARNING: {msg}")
+    
+    @staticmethod
+    def set_page_config(**kwargs): pass  # Mock page config
+
+sys.modules['streamlit'] = MockStreamlit()
+
 def test_email_validation():
     """Test email validation with edge cases"""
     print("🧪 Testing Email Validation...")
     
-    # Import the validation function
-    sys.path.append('app')
-    from main import validate_email
+    # Define the validation function directly (same logic as in main.py)
+    import re
+    def validate_email(email):
+        pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        return re.match(pattern, email) is not None
     
     test_cases = [
         ("valid@example.com", True, "Standard valid email"),

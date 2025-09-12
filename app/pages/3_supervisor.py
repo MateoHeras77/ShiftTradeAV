@@ -7,20 +7,21 @@ from pathlib import Path
 # Allow running this page directly via Streamlit
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 import utils  # Utility functions
+from utils.general_utils import format_date  # Direct import for format_date function
 
 
 
 def render_pending_request(req):
     """Render a single pending request with approve/reject actions."""
     req_id = req.get("id")
-    formatted_date = utils.format_date(req.get("date_request", "N/A"))
+    formatted_date = format_date(req.get("date_request", "N/A"))
     expander_title = f"Date: {formatted_date} - Flight: {req.get('flight_number', 'N/A')} - Requester: {req.get('requester_name', 'N/A')}"
 
     with st.expander(expander_title):
         with st.form(key=f"form_{req_id}"):
             st.markdown(
                 f"""
-                - **Request Date:** {utils.format_date(req.get('date_request', 'N/A'))}
+                - **Request Date:** {format_date(req.get('date_request', 'N/A'))}
                 - **Flight Number:** {req.get('flight_number')}
                 - **Requester:** {req.get('requester_name')} ({req.get('requester_employee_number')}, {req.get('requester_email')})
                 - **Covering Employee:** {req.get('cover_name')} ({req.get('cover_employee_number')}, {req.get('cover_email')})
@@ -33,7 +34,7 @@ def render_pending_request(req):
             )
             if has_cover_accepted:
                 st.success(
-                    f"✅ **ACCEPTED BY COVERING EMPLOYEE:** {utils.format_date(req.get('date_accepted_by_cover'))}"
+                    f"✅ **ACCEPTED BY COVERING EMPLOYEE:** {format_date(req.get('date_accepted_by_cover'))}"
                 )
             else:
                 st.error("❌ **PENDING ACCEPTANCE BY COVERING EMPLOYEE**")
@@ -90,9 +91,9 @@ def render_pending_request(req):
                     if update_success:
                         st.caption("Sending email notifications...")
                         fecha_aprobacion = datetime.now().strftime("%d/%m/%Y")
-                        fecha_vuelo = utils.format_date(req.get("date_request"))
+                        fecha_vuelo = format_date(req.get("date_request"))
                         fecha_aceptacion = (
-                            utils.format_date(req.get("date_accepted_by_cover"))
+                            format_date(req.get("date_accepted_by_cover"))
                             if req.get("date_accepted_by_cover")
                             else "N/A"
                         )
@@ -201,9 +202,9 @@ ShiftTradeAV"""
                     if update_success:
                         st.caption("Sending email notifications...")
                         fecha_rechazo = datetime.now().strftime("%d/%m/%Y")
-                        fecha_vuelo = utils.format_date(req.get("date_request"))
+                        fecha_vuelo = format_date(req.get("date_request"))
                         fecha_aceptacion = (
-                            utils.format_date(req.get("date_accepted_by_cover"))
+                            format_date(req.get("date_accepted_by_cover"))
                             if req.get("date_accepted_by_cover")
                             else "N/A"
                         )
@@ -459,12 +460,12 @@ elif st.session_state.view_mode == "history_view":
         ):  # Assuming this is the original shift date
             # Usar la función personalizada de formateo para todas las fechas
             df_display_full["date_request"] = df_display_full["date_request"].apply(
-                utils.format_date
+                format_date
             )
         if "supervisor_decision_date" in df_display_full.columns:
             df_display_full["supervisor_decision_date"] = df_display_full[
                 "supervisor_decision_date"
-            ].apply(utils.format_date)
+            ].apply(format_date)
 
         rename_map = {
             "id": "ID",

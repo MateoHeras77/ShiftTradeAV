@@ -6,6 +6,7 @@ from pathlib import Path
 # Allow running this page directly via Streamlit
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 import utils  # Utility functions
+from utils.general_utils import format_date  # Direct import for format_date function
 
 
 # Project ID for Supabase calls
@@ -44,7 +45,7 @@ with st.spinner("Loading shift details..."):
 if request_details:
     st.markdown(f"""
     **Shift to Cover Details:**
-    - **Date of Shift to Change:** {utils.format_date(request_details.get('date_request', 'N/A'))}
+    - **Date of Shift to Change:** {format_date(request_details.get('date_request', 'N/A'))}
     - **Flight:** {request_details.get('flight_number', 'N/A')}
     
     **Requester Information:**
@@ -129,7 +130,7 @@ Good news. {cover_name} has accepted to cover your shift.
 **Change details:**
 • Acceptance date: {acceptance_date}
 • Flight: {flight_number}
-• Shift date: {utils.format_date(date_request)}
+• Shift date: {format_date(date_request)}
 • Covering coworker: {cover_name}
 
 The request is now pending supervisor approval.
@@ -148,7 +149,7 @@ You have accepted to cover {requester_name}'s shift.
 **Change details:**
 • Acceptance date: {acceptance_date}
 • Flight: {flight_number}
-• Shift date: {utils.format_date(date_request)}
+• Shift date: {format_date(date_request)}
 • Requester: {requester_name}
 
 The request is now pending supervisor approval.

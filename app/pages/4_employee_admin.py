@@ -6,6 +6,7 @@ from pathlib import Path
 # Allow running this page directly via Streamlit
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 import utils
+from utils.general_utils import format_date  # Direct import for format_date function
 
 
 # Project ID for Supabase calls
@@ -88,9 +89,9 @@ with tab1:
                 with col3:
                     st.write(f"**Email:** {emp['email']}")
                 
-                st.write(f"**Created:** {utils.format_date(emp['created_at'])}")
+                st.write(f"**Created:** {format_date(emp['created_at'])}")
                 if emp['updated_at'] != emp['created_at']:
-                    st.write(f"**Updated:** {utils.format_date(emp['updated_at'])}")
+                    st.write(f"**Updated:** {format_date(emp['updated_at'])}")
     else:
         st.info("No employees registered in the system.")
 
@@ -252,8 +253,8 @@ with tab4:
                         st.session_state.employee_to_reactivate = emp
                         st.rerun()
                 
-                st.write(f"**Created:** {utils.format_date(emp['created_at'])}")
-                st.write(f"**Deactivated:** {utils.format_date(emp['updated_at'])}")
+                st.write(f"**Created:** {format_date(emp['created_at'])}")
+                st.write(f"**Deactivated:** {format_date(emp['updated_at'])}")
         
         # Show confirmation dialog for reactivation
         if st.session_state.show_reactivate_confirm and st.session_state.employee_to_reactivate:

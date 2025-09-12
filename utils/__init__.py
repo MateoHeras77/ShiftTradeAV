@@ -18,6 +18,7 @@ from .employee_management import (
 from .calendar_utils import (
     create_calendar_file, save_calendar_file, get_flight_schedule_info
 )
+from .general_utils import format_date
 
 __all__ = [
     # Token management
@@ -36,5 +37,8 @@ __all__ = [
     'deactivate_employee', 'reactivate_employee', 'get_inactive_employees',
     
     # Calendar utilities
-    'create_calendar_file', 'save_calendar_file', 'get_flight_schedule_info'
+    'create_calendar_file', 'save_calendar_file', 'get_flight_schedule_info',
+    
+    # General utilities
+    'format_date'
 ]

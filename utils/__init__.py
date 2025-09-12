@@ -19,6 +19,11 @@ from .calendar_utils import (
     create_calendar_file, save_calendar_file, get_flight_schedule_info
 )
 from .general_utils import format_date
+from .business_validation import (
+    validate_request_date, check_duplicate_request, validate_supervisor_authorization,
+    check_shift_overlap, validate_flight_number, validate_business_email,
+    validate_status_transition, validate_shift_request, get_validation_summary
+)
 
 __all__ = [
     # Token management
@@ -40,5 +45,10 @@ __all__ = [
     'create_calendar_file', 'save_calendar_file', 'get_flight_schedule_info',
     
     # General utilities
-    'format_date'
+    'format_date',
+    
+    # Business validation
+    'validate_request_date', 'check_duplicate_request', 'validate_supervisor_authorization',
+    'check_shift_overlap', 'validate_flight_number', 'validate_business_email',
+    'validate_status_transition', 'validate_shift_request', 'get_validation_summary'
 ]

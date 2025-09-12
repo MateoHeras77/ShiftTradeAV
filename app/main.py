@@ -9,6 +9,9 @@ from pathlib import Path
 # Allow running without installing the package
 sys.path.append(str(Path(__file__).resolve().parent))
 import utils  # Utility functions for Supabase, tokens, and email
+# Import specific functions after importing utils module
+from utils.general_utils import format_date  # Import directly from general_utils
+from utils.business_validation import validate_shift_request  # Import business validation
 
 
 # Project ID for Supabase calls
@@ -319,13 +322,13 @@ if submit_button:
 
                     email_body = f"""Hello {cover_name},
 
-{requester_name} has requested that you cover their shift for flight {flight_number} on {utils.format_date(date_request_input)}.
+{requester_name} has requested that you cover their shift for flight {flight_number} on {format_date(date_request_input)}.
 
 **Request details:**
 • Request date: {request_date}
 • Flight: {flight_number}
 • Schedule: {flight_schedule['display_schedule']}
-• Shift date: {utils.format_date(date_request_input)}
+• Shift date: {format_date(date_request_input)}
 • Requester: {requester_name}
 
 To accept, please click the following link (valid for 24 hours):

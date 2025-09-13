@@ -40,13 +40,13 @@ def get_flight_schedule_info(flight_number):
             'start_time': '20:00',
             'end_time': '00:30',
             'is_overnight': True,
-            'display_schedule': '20:00-00:30 (día siguiente)'
+            'display_schedule': '20:00-00:30 (next day)'
         },
         'AV625': {
             'start_time': '20:00',
             'end_time': '02:30',
             'is_overnight': True,
-            'display_schedule': '20:00-02:30 (día siguiente)'
+            'display_schedule': '20:00-02:30 (next day)'
         },
         'AV255-AV627': {
             'start_time': '05:00',
@@ -64,7 +64,7 @@ def get_flight_schedule_info(flight_number):
             'start_time': '13:00',
             'end_time': '00:30',
             'is_overnight': True,
-            'display_schedule': '13:00-00:30 (día siguiente)'
+            'display_schedule': '13:00-00:30 (next day)'
         }
     }
     
@@ -100,7 +100,7 @@ def create_calendar_file(shift_data, is_for_requester=True):
             shift_date = datetime.now().date()
         
         # Extract flight information
-        flight_info = shift_data.get('flight_number', 'Vuelo no especificado')
+        flight_info = shift_data.get('flight_number', 'Flight not specified')
         
         # Get flight schedule details using the helper function
         schedule_info = get_flight_schedule_info(flight_info)
@@ -168,7 +168,7 @@ DTSTART:{format_datetime_for_ical(shift_start_utc)}
 DTEND:{format_datetime_for_ical(shift_end_utc)}
 SUMMARY:{summary}
 DESCRIPTION:{description}
-LOCATION:Avianca
+LOCATION:Toronto Pearson Airport
 STATUS:{status}
 SEQUENCE:1
 END:VEVENT

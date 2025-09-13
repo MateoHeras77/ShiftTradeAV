@@ -7,15 +7,19 @@ import sys
 from pathlib import Path
 
 # Allow running without installing the package
-sys.path.append(str(Path(__file__).resolve().parent))
-import utils  # Utility functions for Supabase, tokens, and email
-# Import specific functions after importing utils module
+project_root = Path(__file__).resolve().parent.parent
+app_dir = Path(__file__).resolve().parent
+sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(app_dir))
+
+import app_utils as utils  # Utility functions for Supabase, tokens, and email
+# Import specific functions directly from the utils package
 from utils.general_utils import format_date  # Import directly from general_utils
 from utils.business_validation import validate_shift_request  # Import business validation
 
 
 # Project ID for Supabase calls
-PROJECT_ID = "lperiyftrgzchrzvutgx"  # Replace with your actual Supabase project ID
+PROJECT_ID = "eynioxgzavfftukadjqm"  # Replace with your actual Supabase project ID
 
 
 # Function to validate email format

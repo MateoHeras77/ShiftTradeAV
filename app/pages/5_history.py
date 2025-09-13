@@ -5,12 +5,15 @@ import sys
 from pathlib import Path
 
 # Allow running this page directly via Streamlit
-sys.path.append(str(Path(__file__).resolve().parents[1]))
-import utils
+project_root = Path(__file__).resolve().parents[2]
+app_dir = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(app_dir))
+import app_utils as utils
 
 
 # Project ID (ensure this is consistent, or pass it around/get from a central config)
-PROJECT_ID = "lperiyftrgzchrzvutgx"
+PROJECT_ID = "eynioxgzavfftukadjqm"
 
 st.set_page_config(
     page_title="Shift History",

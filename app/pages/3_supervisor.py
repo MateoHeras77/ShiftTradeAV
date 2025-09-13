@@ -18,7 +18,7 @@ def render_pending_request(req):
     """Render a single pending request with approve/reject actions."""
     req_id = req.get("id")
     formatted_date = format_date(req.get("date_request", "N/A"))
-    expander_title = f"Date: {formatted_date} - Flight: {req.get('flight_number', 'N/A')} - Requester: {req.get('requester_name', 'N/A')}"
+    expander_title = f"Date: {formatted_date} - Flight: {req.get('flight_number', 'N/A')} - Requester: {req.get('employee_name', 'N/A')}"
 
     with st.expander(expander_title):
         with st.form(key=f"form_{req_id}"):
@@ -26,8 +26,8 @@ def render_pending_request(req):
                 f"""
                 - **Request Date:** {format_date(req.get('date_request', 'N/A'))}
                 - **Flight Number:** {req.get('flight_number')}
-                - **Requester:** {req.get('requester_name')} ({req.get('requester_employee_number')}, {req.get('requester_email')})
-                - **Covering Employee:** {req.get('cover_name')} ({req.get('cover_employee_number')}, {req.get('cover_email')})
+                - **Requester:** {req.get('employee_name')} ({req.get('raic_color')}, {req.get('employee_email')})
+                - **Covering Employee:** {req.get('cover_name')} ({req.get('cover_email')})
                 """
             )
 
@@ -102,7 +102,7 @@ def render_pending_request(req):
                         )
 
                         requester_subject = "✅ Shift Change APPROVED"
-                        requester_body = f"""Hello {req.get('requester_name')},
+                        requester_body = f"""Hello {req.get('employee_name')},
 
 Great news! Your shift change request has been APPROVED.
 
@@ -132,7 +132,7 @@ The shift change you agreed to cover has been APPROVED by the supervisor.
 **Approved change details:**
 • Flight: {req.get('flight_number')}
 • Shift date: {fecha_vuelo}
-• Original requester: {req.get('requester_name')}
+• Original requester: {req.get('employee_name')}
 • Approved by supervisor: {supervisor_name_input_val}
 • Approval date: {fecha_aprobacion}
 
@@ -148,7 +148,7 @@ Thank you for your cooperation. The change is officially authorized.
 Best regards,
 ShiftTradeAV"""
                         email1 = utils.send_email_with_calendar(
-                            req.get("requester_email"),
+                            req.get("employee_email"),
                             requester_subject,
                             requester_body,
                             req,
@@ -213,7 +213,7 @@ ShiftTradeAV"""
                         )
 
                         requester_subject = "❌ Shift Change REJECTED"
-                        requester_body = f"""Hello {req.get('requester_name')},
+                        requester_body = f"""Hello {req.get('employee_name')},
 
 We regret to inform you that your shift change request has been REJECTED.
 
@@ -243,7 +243,7 @@ We inform you that the shift change you had agreed to cover has been REJECTED by
 **Rejected request details:**
 • Flight: {req.get('flight_number')}
 • Shift date: {fecha_vuelo}
-• Original requester: {req.get('requester_name')}
+• Original requester: {req.get('employee_name')}
 • Supervisor who rejected: {supervisor_name_input_val}
 • Rejection date: {fecha_rechazo}
 
@@ -259,7 +259,7 @@ You no longer need to cover this shift. Thank you for your willingness.
 Best regards,
 ShiftTradeAV"""
                         email1 = utils.send_email(
-                            req.get("requester_email"),
+                            req.get("employee_email"),
                             requester_subject,
                             requester_body,
                         )
@@ -444,7 +444,7 @@ elif st.session_state.view_mode == "history_view":
             "id",
             "date_request",
             "flight_number",
-            "requester_name",
+            "employee_name",
             "cover_name",
             "supervisor_status",
             "supervisor_name",
@@ -474,7 +474,7 @@ elif st.session_state.view_mode == "history_view":
             "id": "ID",
             "date_request": "Original Shift Date",
             "flight_number": "Flight",
-            "requester_name": "Requester",
+            "employee_name": "Requester",
             "cover_name": "Covering Employee",
             "supervisor_status": "Supervisor Status",
             "supervisor_name": "Supervisor",

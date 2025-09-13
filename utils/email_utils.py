@@ -63,8 +63,8 @@ def send_email_with_calendar(recipient_email, subject, body, shift_data, is_for_
         
         if calendar_content:
             # Create attachment
-            person_type = "solicitante" if is_for_requester else "cobertura"
-            filename = f"turno_{person_type}_{shift_data.get('flight_number', 'AV')}.ics"
+            person_type = "requester" if is_for_requester else "cover"
+            filename = f"shift_{person_type}_{shift_data.get('flight_number', 'AV')}.ics"
             
             calendar_attachment = MIMEBase('text', 'calendar')
             calendar_attachment.set_payload(calendar_content.encode('utf-8'))

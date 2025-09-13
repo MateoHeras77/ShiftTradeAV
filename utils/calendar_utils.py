@@ -145,13 +145,13 @@ def create_calendar_file(shift_data, is_for_requester=True):
         
         if is_for_requester:
             # For the person who requested the change - they are GIVING UP this shift
-            summary = f"TURNO CEDIDO: {flight_info} ({flight_schedule_display})"
-            description = f"Turno cedido - Intercambio aprobado\\nVuelo: {flight_info}\\nHorario: {flight_schedule_display}\\nCubierto por: {shift_data.get('cover_name', 'N/A')}\\nSupervisor: {shift_data.get('supervisor_name', 'N/A')}"
+            summary = f"SHIFT GIVEN UP: {flight_info} ({flight_schedule_display})"
+            description = f"Shift given up - Approved exchange\\nFlight: {flight_info}\\nSchedule: {flight_schedule_display}\\nCovered by: {shift_data.get('cover_name', 'N/A')}\\nSupervisor: {shift_data.get('supervisor_name', 'N/A')}"
             status = "CANCELLED"
         else:
             # For the person covering the shift - they are TAKING this shift
-            summary = f"TURNO ACEPTADO: {flight_info} ({flight_schedule_display})"
-            description = f"Turno aceptado por intercambio\\nVuelo: {flight_info}\\nHorario: {flight_schedule_display}\\nSolicitante original: {shift_data.get('requester_name', 'N/A')}\\nSupervisor: {shift_data.get('supervisor_name', 'N/A')}"
+            summary = f"SHIFT ACCEPTED: {flight_info} ({flight_schedule_display})"
+            description = f"Shift accepted by exchange\\nFlight: {flight_info}\\nSchedule: {flight_schedule_display}\\nOriginal requester: {shift_data.get('employee_name', 'N/A')}\\nSupervisor: {shift_data.get('supervisor_name', 'N/A')}"
             status = "CONFIRMED"
         
         # Create iCal content with single event
@@ -201,7 +201,7 @@ def save_calendar_file(shift_data, is_for_requester=True, filename_prefix="shift
             return None, None
         
         # Create a temporary file
-        suffix = "_solicitante.ics" if is_for_requester else "_cobertura.ics"
+        suffix = "_requester.ics" if is_for_requester else "_cover.ics"
         with tempfile.NamedTemporaryFile(mode='w', suffix=suffix, prefix=filename_prefix, delete=False) as temp_file:
             temp_file.write(calendar_content)
             temp_file_path = temp_file.name

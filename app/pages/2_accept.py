@@ -45,6 +45,14 @@ st.write(f"Shift change request ID: {shift_request_id}") # For debugging or info
 # Fetch shift request details to show some info (optional but good UX)
 with st.spinner("Loading shift details..."):
     request_details = utils.get_shift_request_details(shift_request_id, PROJECT_ID)
+
+# Get cover employee's RAIC color from the employees table
+cover_raic_color = "Not available"
+if request_details and request_details.get('cover_email'):
+    cover_employee = utils.get_employee_by_email(request_details['cover_email'], PROJECT_ID)
+    if cover_employee:
+        cover_raic_color = cover_employee.get('raic_color', 'Not available')
+
 if request_details:
     st.markdown(f"""
     **Shift to Cover Details:**
@@ -52,13 +60,13 @@ if request_details:
     - **Flight:** {request_details.get('flight_number', 'N/A')}
     
     **Requester Information:**
-    - **Name:** {request_details.get('requester_name', 'N/A')}
-    - **RAIC Color (Requester):** {request_details.get('requester_employee_number', 'N/A')}
-    - **Email:** {request_details.get('requester_email', 'N/A')}
+    - **Name:** {request_details.get('employee_name', 'N/A')}
+    - **RAIC Color (Requester):** {request_details.get('raic_color', 'N/A')}
+    - **Email:** {request_details.get('employee_email', 'N/A')}
 
     **Your Information (Cover):**
     - **Name:** {request_details.get('cover_name', 'N/A')}
-    - **RAIC Color (Cover):** {request_details.get('cover_employee_number', 'N/A')}
+    - **RAIC Color (Cover):** {cover_raic_color}
     - **Email:** {request_details.get('cover_email', 'N/A')}
     """)
 else:
@@ -109,9 +117,9 @@ if st.button("✅ Accept Shift Change", disabled=not confirmations_checked):
             progress_bar.progress(66)
             
             if updated_request_details:
-                requester_email = updated_request_details.get('requester_email')
+                requester_email = updated_request_details.get('employee_email')  # Fixed field name
                 cover_email = updated_request_details.get('cover_email') # Your email
-                requester_name = updated_request_details.get('requester_name')
+                requester_name = updated_request_details.get('employee_name')  # Fixed field name
                 cover_name = updated_request_details.get('cover_name')
                 flight_number = updated_request_details.get('flight_number')
                 date_request = updated_request_details.get('date_request')

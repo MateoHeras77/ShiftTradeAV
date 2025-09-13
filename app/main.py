@@ -283,15 +283,13 @@ if submit_button:
     else:
         with st.spinner("Processing request..."):
             request_details = {
-                "date_request": str(
-                    date_request_input
-                ),  # Ensure it's a string for Supabase if not handled by client
+                "employee_name": requester_name,
+                "employee_email": requester_email,
+                "raic_color": requester_employee_number,
                 "flight_number": flight_number,
-                "requester_name": requester_name,
-                "requester_employee_number": requester_employee_number,
-                "requester_email": requester_email,
+                "date_request": str(date_request_input),  # Convert date to string for Supabase
+                "reason": "",  # No reason field in current form, set empty string
                 "cover_name": cover_name,
-                "cover_employee_number": cover_employee_number,
                 "cover_email": cover_email,
                 "supervisor_status": "pending",  # Initial status
             }

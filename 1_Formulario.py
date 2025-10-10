@@ -15,6 +15,21 @@ def validate_email(email):
 
 st.set_page_config(page_title="Solicitar Cambio", page_icon="✈️", layout="centered")
 
+# IMPORTANT: Application decommission banner
+# This shows a blocking, prominent message to users and stops the app so
+# no new shift trade requests can be created here. The message points users
+# to the new SwiftShift service.
+st.markdown("# ⚠️ Servicio descontinuado")
+st.caption(
+    "Esta aplicación ya no acepta nuevas solicitudes de cambio de turno.\n"
+    "Por favor, utiliza el servicio actualizado en: https://www.swiftshift.digital/"
+)
+st.info(
+    "Para crear nuevas solicitudes o gestionar cambios de turno, visita: https://www.swiftshift.digital/"
+)
+# Prevent the rest of the Streamlit app from running
+st.stop()
+
 
 st.title("✈️ Formulario de Solicitud de Cambio de Turno")
 
